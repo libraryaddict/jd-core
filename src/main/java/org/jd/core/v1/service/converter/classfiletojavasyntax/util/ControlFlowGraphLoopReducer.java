@@ -120,7 +120,9 @@ public class ControlFlowGraphLoopReducer {
                 BasicBlock start = list.get(i);
                 BitSet startDominatorIndexes = arrayOfDominatorIndexes[i];
 
-                if ((start.getType() == TYPE_TRY_DECLARATION) && (maxOffset != start.getFromOffset()) && (maxOffset < start.getExceptionHandlers().getFirst().getBasicBlock().getFromOffset())) {
+                if ((start.getType() == TYPE_TRY_DECLARATION)
+                        && (maxOffset != start.getFromOffset())
+                        && (maxOffset < start.getExceptionHandlers().getFirst().getBasicBlock().getFromOffset())) {
                     // 'try' statement outside the loop
                     BasicBlock newStart = start.getNext();
                     HashSet<BasicBlock> newStartPredecessors = newStart.getPredecessors();

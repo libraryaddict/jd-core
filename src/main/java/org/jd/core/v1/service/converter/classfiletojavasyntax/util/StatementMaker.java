@@ -648,9 +648,17 @@ public class StatementMaker {
         BasicBlock next = sub1.getNext();
         BasicBlock last = sub1;
 
+        int safe_count = 0;    //add by yaojie
         while (next.matchType(GROUP_SINGLE_SUCCESSOR) && (next.getPredecessors().size() == 1)) {
             last = next;
             next = next.getNext();
+
+            // add by yaojie begin
+            safe_count ++;
+            if (safe_count >= 5) {
+                break;
+            }
+            // add by yaojie end
         }
 
         if ((next == LOOP_START) && (last.getType() == TYPE_IF) && (last.getSub1() == LOOP_END) && (countStartLoop(sub1) == 1)) {
