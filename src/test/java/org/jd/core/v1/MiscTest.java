@@ -15,6 +15,7 @@ import org.apache.commons.collections4.Factory;
 import org.apache.commons.collections4.FluentIterable;
 import org.apache.commons.collections4.Predicate;
 import org.apache.commons.collections4.Transformer;
+import org.apache.commons.collections4.bidimap.UnmodifiableBidiMap;
 import org.apache.commons.imaging.ImageReadException;
 import org.apache.commons.imaging.Imaging;
 import org.apache.commons.imaging.formats.bmp.BmpImageParser;
@@ -24,9 +25,13 @@ import org.apache.commons.imaging.formats.tiff.write.TiffImageWriterBase;
 import org.apache.commons.imaging.internal.Util;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.filefilter.IOFileFilter;
+import org.apache.commons.io.function.IOBaseStream;
+import org.apache.commons.io.function.IOBinaryOperator;
 import org.apache.commons.lang3.ClassUtils;
 import org.apache.commons.lang3.EnumUtils;
+import org.apache.commons.lang3.function.FailableFunction;
 import org.apache.commons.lang3.function.TriFunction;
+import org.apache.commons.lang3.stream.Streams;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.core.LogEvent;
 import org.apache.logging.log4j.core.appender.AbstractManager;
@@ -60,6 +65,7 @@ import org.jd.core.v1.printer.ClassFilePrinter;
 import org.jd.core.v1.printer.PlainTextPrinter;
 import org.jd.core.v1.regex.PatternMaker;
 import org.jsoup.nodes.Attribute;
+import org.jsoup.nodes.Element;
 import org.junit.Test;
 import org.junit.experimental.categories.Categories;
 import org.junit.internal.Throwables;
@@ -81,6 +87,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.lang.invoke.MethodHandle;
 import java.lang.reflect.Type;
+import java.nio.charset.Charset;
 import java.nio.file.CopyOption;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -121,7 +128,7 @@ public class MiscTest extends AbstractJdTest {
 //    public void testLabel() throws Exception {
 //        String internalClassName = Label.class.getName().replace('.', '/');
 //        String source = decompileSuccess(new ClassPathLoader(), new PlainTextPrinter(), internalClassName);
-//        
+//
 //        // Recompile decompiled source code and check errors
 //        assertTrue(CompilerUtil.compile("1.8", new InMemoryJavaSourceFileObject(internalClassName, source)));
 //    }
@@ -136,11 +143,11 @@ public class MiscTest extends AbstractJdTest {
         }
         String internalClassName = FREM.class.getName().replace('.', '/');
         String source = decompileSuccess(new ClassPathLoader(), new PlainTextPrinter(), internalClassName);
-        
+
         // Check decompiled source code
         assertTrue(source.matches(PatternMaker.make("float frem(float a, float b) {")));
         assertTrue(source.matches(PatternMaker.make("return a % b;")));
-        
+
         // Recompile decompiled source code and check errors
         assertTrue(CompilerUtil.compile("1.4", new InMemoryJavaSourceFileObject(internalClassName, source)));
     }
@@ -156,11 +163,11 @@ public class MiscTest extends AbstractJdTest {
         }
         String internalClassName = FileFilterUtils.class.getName().replace('.', '/');
         String source = decompileSuccess(new ClassPathLoader(), new ClassFilePrinter(), internalClassName);
-        
+
         // Recompile decompiled source code and check errors
         assertTrue(CompilerUtil.compile("1.8", new InMemoryJavaSourceFileObject(internalClassName, source)));
     }
-    
+
     @Test
     public void testCastPrimitive() throws Exception {
         abstract class CastPrimitive {
@@ -174,7 +181,7 @@ public class MiscTest extends AbstractJdTest {
         }
         String internalClassName = CastPrimitive.class.getName().replace('.', '/');
         String source = decompileSuccess(new ClassPathLoader(), new PlainTextPrinter(), internalClassName);
-        
+
         // Recompile decompiled source code and check errors
         assertTrue(CompilerUtil.compile("1.8", new InMemoryJavaSourceFileObject(internalClassName, source)));
     }
@@ -183,95 +190,92 @@ public class MiscTest extends AbstractJdTest {
     public void testTiffImageWriterBase() throws Exception {
         String internalClassName = TiffImageWriterBase.class.getName().replace('.', '/');
         String source = decompileSuccess(new ClassPathLoader(), new PlainTextPrinter(), internalClassName);
-        
+
         // Recompile decompiled source code and check errors
         assertTrue(CompilerUtil.compile("1.8", new InMemoryJavaSourceFileObject(internalClassName, source)));
     }
-    
-    /*
-     * TODO FIXME Eclipse compiler incompatibility
-     */
+
     @Test
     public void testJavaClass() throws Exception {
         String internalClassName = JavaClass.class.getName().replace('.', '/');
         String source = decompileSuccess(new ClassPathLoader(), new PlainTextPrinter(), internalClassName);
-        
+
         // Recompile decompiled source code and check errors
         assertTrue(CompilerUtil.compile("1.8", new InMemoryJavaSourceFileObject(internalClassName, source)));
     }
-    
+
     @Test
     public void testPUSH() throws Exception {
         String internalClassName = PUSH.class.getName().replace('.', '/');
         String source = decompileSuccess(new ClassPathLoader(), new PlainTextPrinter(), internalClassName);
-        
+
         // Recompile decompiled source code and check errors
         assertTrue(CompilerUtil.compile("1.8", new InMemoryJavaSourceFileObject(internalClassName, source)));
     }
-    
+
     @Test
     public void testErrorCollector() throws Exception {
         String internalClassName = ErrorCollector.class.getName().replace('.', '/');
         String source = decompileSuccess(new ClassPathLoader(), new PlainTextPrinter(), internalClassName);
-        
+
         // Recompile decompiled source code and check errors
         assertTrue(CompilerUtil.compile("1.8", new InMemoryJavaSourceFileObject(internalClassName, source)));
     }
-    
+
     @Test
     public void testImaging() throws Exception {
         String internalClassName = Imaging.class.getName().replace('.', '/');
         String source = decompileSuccess(new ClassPathLoader(), new PlainTextPrinter(), internalClassName);
-        
+
         // Recompile decompiled source code and check errors
         assertTrue(CompilerUtil.compile("1.8", new InMemoryJavaSourceFileObject(internalClassName, source)));
     }
-    
+
     @Test
     public void testEnumUtils() throws Exception {
         String internalClassName = EnumUtils.class.getName().replace('.', '/');
         String source = decompileSuccess(new ClassPathLoader(), new PlainTextPrinter(), internalClassName);
-        
+
         // Recompile decompiled source code and check errors
         assertTrue(CompilerUtil.compile("1.8", new InMemoryJavaSourceFileObject(internalClassName, source)));
     }
-    
+
     @Test
     public void testDhtSegment() throws Exception {
         String internalClassName = DhtSegment.class.getName().replace('.', '/');
         String source = decompileSuccess(new ClassPathLoader(), new PlainTextPrinter(), internalClassName);
-        
+
         // Recompile decompiled source code and check errors
         assertTrue(CompilerUtil.compile("1.8", new InMemoryJavaSourceFileObject(internalClassName, source)));
     }
-    
+
     @Test
     public void testCategories() throws Exception {
         String internalClassName = Categories.class.getName().replace('.', '/');
         String source = decompileSuccess(new ClassPathLoader(), new PlainTextPrinter(), internalClassName);
-        
+
         // Recompile decompiled source code and check errors
         assertTrue(CompilerUtil.compile("1.6", new InMemoryJavaSourceFileObject(internalClassName, source)));
     }
-    
+
     @Test
     public void testCodeBlock() throws Exception {
         String internalClassName = CodeBlock.class.getName().replace('.', '/');
         String source = decompileSuccess(new ClassPathLoader(), new PlainTextPrinter(), internalClassName);
-        
+
         // Recompile decompiled source code and check errors
         assertTrue(CompilerUtil.compile("1.8", new InMemoryJavaSourceFileObject(internalClassName, source)));
     }
-    
+
     @Test
     public void testDaitchMokotoffSoundex() throws Exception {
         String internalClassName = DaitchMokotoffSoundex.class.getName().replace('.', '/');
         String source = decompileSuccess(new ClassPathLoader(), new PlainTextPrinter(), internalClassName);
-        
+
         // Recompile decompiled source code and check errors
         assertTrue(CompilerUtil.compile("1.7", new InMemoryJavaSourceFileObject(internalClassName, source)));
     }
-    
+
     @Test
     public void testInitTable() throws Exception {
         class InitTable {
@@ -295,59 +299,59 @@ public class MiscTest extends AbstractJdTest {
         // Recompile decompiled source code and check errors
         assertTrue(CompilerUtil.compile("1.4", new InMemoryJavaSourceFileObject(internalClassName, source)));
     }
-    
+
     @Test
     public void testParentRunner() throws Exception {
         String internalClassName = ParentRunner.class.getName().replace('.', '/');
         String source = decompileSuccess(new ClassPathLoader(), new PlainTextPrinter(), internalClassName);
-        
+
         // Recompile decompiled source code and check errors
         assertTrue(CompilerUtil.compile("1.6", new InMemoryJavaSourceFileObject(internalClassName, source)));
     }
-    
+
     @Test
     public void testTimeout() throws Exception {
         String internalClassName = Timeout.class.getName().replace('.', '/');
         String source = decompileSuccess(new ClassPathLoader(), new PlainTextPrinter(), internalClassName);
-        
+
         // Recompile decompiled source code and check errors
         assertTrue(CompilerUtil.compile("1.6", new InMemoryJavaSourceFileObject(internalClassName, source)));
     }
-    
+
     @Test
     public void testFrameworkMethod() throws Exception {
         String internalClassName = FrameworkMethod.class.getName().replace('.', '/');
         String source = decompileSuccess(new ClassPathLoader(), new PlainTextPrinter(), internalClassName);
-        
+
         // Recompile decompiled source code and check errors
         assertTrue(CompilerUtil.compile("1.6", new InMemoryJavaSourceFileObject(internalClassName, source)));
     }
-    
+
     @Test
     public void testThrowables() throws Exception {
         String internalClassName = Throwables.class.getName().replace('.', '/');
         String source = decompileSuccess(new ClassPathLoader(), new PlainTextPrinter(), internalClassName);
-        
+
         // Recompile decompiled source code and check errors
         assertTrue(CompilerUtil.compile("1.6", new InMemoryJavaSourceFileObject(internalClassName, source)));
     }
-    
+
     @Test
     public void testRuleChain() throws Exception {
         String internalClassName = RuleChain.class.getName().replace('.', '/');
         String source = decompileSuccess(new ClassPathLoader(), new PlainTextPrinter(), internalClassName);
-        
+
         // Recompile decompiled source code and check errors
         assertTrue(CompilerUtil.compile("1.6", new InMemoryJavaSourceFileObject(internalClassName, source)));
     }
-    
+
     @Test
     public void testTryResourcesImaging() throws Exception {
         String internalClassName = TryResourcesImaging.class.getName().replace('.', '/');
         try (InputStream is = this.getClass().getResourceAsStream("/jar/try-resources-imaging-jdk-11.0.12.jar")) {
             Loader loader = new ZipLoader(is);
             String source = decompileSuccess(loader, new PlainTextPrinter(), internalClassName);
-            
+
             // Recompile decompiled source code and check errors
             assertTrue(CompilerUtil.compile("11", new InMemoryJavaSourceFileObject(internalClassName, source)));
         }
@@ -361,34 +365,34 @@ public class MiscTest extends AbstractJdTest {
         // Recompile decompiled source code and check errors
         assertTrue(CompilerUtil.compile("1.6", new InMemoryJavaSourceFileObject(internalClassName, source)));
     }
-    
+
     @Test
     public void testBmpImageParser() throws Exception {
         String internalClassName = BmpImageParser.class.getName().replace('.', '/');
         String source = decompileSuccess(new ClassPathLoader(), new PlainTextPrinter(), internalClassName);
-        
+
         // Recompile decompiled source code and check errors
         assertTrue(CompilerUtil.compile("1.8", new InMemoryJavaSourceFileObject(internalClassName, source)));
     }
-    
+
     @Test
     public void testPnmImageParser() throws Exception {
         String internalClassName = PnmImageParser.class.getName().replace('.', '/');
         String source = decompileSuccess(new ClassPathLoader(), new PlainTextPrinter(), internalClassName);
-        
+
         // Recompile decompiled source code and check errors
         assertTrue(CompilerUtil.compile("1.8", new InMemoryJavaSourceFileObject(internalClassName, source)));
     }
-    
+
     @Test
     public void testImageParserUtil() throws Exception {
         String internalClassName = Util.class.getName().replace('.', '/');
         String source = decompileSuccess(new ClassPathLoader(), new PlainTextPrinter(), internalClassName);
-        
+
         // Recompile decompiled source code and check errors
         assertTrue(CompilerUtil.compile("17", new InMemoryJavaSourceFileObject(internalClassName, source)));
     }
-    
+
     @Test
     public void testT4Decompression() throws Exception {
         class T4Decompression {
@@ -413,11 +417,11 @@ public class MiscTest extends AbstractJdTest {
         }
         String internalClassName = T4Decompression.class.getName().replace('.', '/');
         String source = decompileSuccess(new ClassPathLoader(), new PlainTextPrinter(), internalClassName);
-        
+
         // Recompile decompiled source code and check errors
         assertTrue(CompilerUtil.compile("1.8", new InMemoryJavaSourceFileObject(internalClassName, source)));
     }
-    
+
     @Test
     public void testCreateDirs() throws Exception {
         class CreateDirs {
@@ -428,14 +432,14 @@ public class MiscTest extends AbstractJdTest {
         }
         String internalClassName = CreateDirs.class.getName().replace('.', '/');
         String source = decompileSuccess(new ClassPathLoader(), new PlainTextPrinter(), internalClassName);
-        
+
         // Check decompiled source code
         assertTrue(source.matches(PatternMaker.make("Files.createDirectories(outputDirectory);")));
 
         // Recompile decompiled source code and check errors
         assertTrue(CompilerUtil.compile("1.8", new InMemoryJavaSourceFileObject(internalClassName, source)));
     }
-    
+
     @Test
     public void testArraysCopyOf() throws Exception {
         class ParameterizedTypeImpl {
@@ -449,11 +453,11 @@ public class MiscTest extends AbstractJdTest {
         }
         String internalClassName = ParameterizedTypeImpl.class.getName().replace('.', '/');
         String source = decompileSuccess(new ClassPathLoader(), new PlainTextPrinter(), internalClassName);
-        
+
         // Recompile decompiled source code and check errors
         assertTrue(CompilerUtil.compile("1.8", new InMemoryJavaSourceFileObject(internalClassName, source)));
     }
-    
+
     @Test
     public void testMapFilter() throws Exception {
         class MapFilter {
@@ -472,15 +476,15 @@ public class MiscTest extends AbstractJdTest {
                     }
                 }
                 return match;
-            }        
+            }
         }
         String internalClassName = MapFilter.class.getName().replace('.', '/');
         String source = decompileSuccess(new ClassPathLoader(), new PlainTextPrinter(), internalClassName);
-        
+
         // Recompile decompiled source code and check errors
         assertTrue(CompilerUtil.compile("1.8", new InMemoryJavaSourceFileObject(internalClassName, source)));
     }
-    
+
     @Test
     public void testEmptyIfNull() throws Exception {
         class EmptyIfNull<K, V> {
@@ -497,11 +501,11 @@ public class MiscTest extends AbstractJdTest {
         }
         String internalClassName = EmptyIfNull.class.getName().replace('.', '/');
         String source = decompileSuccess(new ClassPathLoader(), new PlainTextPrinter(), internalClassName);
-        
+
         // Recompile decompiled source code and check errors
         assertTrue(CompilerUtil.compile("1.8", new InMemoryJavaSourceFileObject(internalClassName, source)));
     }
-    
+
     @Test
     public void testServiceLoader() throws Exception {
         class SvcLoader {
@@ -513,23 +517,23 @@ public class MiscTest extends AbstractJdTest {
         }
         String internalClassName = SvcLoader.class.getName().replace('.', '/');
         String source = decompileSuccess(new ClassPathLoader(), new PlainTextPrinter(), internalClassName);
-        
+
         // Recompile decompiled source code and check errors
         assertTrue(CompilerUtil.compile("1.8", new InMemoryJavaSourceFileObject(internalClassName, source)));
     }
-    
+
     @Test
     public void testExpectedExceptionMatcherBuilder() throws Exception {
         String internalClassName = ExpectedExceptionMatcherBuilder.class.getName().replace('.', '/');
         try (InputStream is = this.getClass().getResourceAsStream("/jar/expected-exception-matcher-builder-jdk1.6.0u119.jar")) {
             Loader loader = new ZipLoader(is);
             String source = decompileSuccess(loader, new PlainTextPrinter(), internalClassName);
-            
+
             // Recompile decompiled source code and check errors
             assertTrue(CompilerUtil.compile("1.6", new InMemoryJavaSourceFileObject(internalClassName, source)));
         }
     }
-    
+
     @Test
     public void testMap() throws Exception {
         class MapIter {
@@ -545,7 +549,7 @@ public class MiscTest extends AbstractJdTest {
         }
         String internalClassName = MapIter.class.getName().replace('.', '/');
         String source = decompileSuccess(new ClassPathLoader(), new PlainTextPrinter(), internalClassName);
-        
+
         // Recompile decompiled source code and check errors
         assertTrue(CompilerUtil.compile("1.8", new InMemoryJavaSourceFileObject(internalClassName, source)));
     }
@@ -565,11 +569,11 @@ public class MiscTest extends AbstractJdTest {
         }
         String internalClassName = MapIter.class.getName().replace('.', '/');
         String source = decompileSuccess(new ClassPathLoader(), new PlainTextPrinter(), internalClassName);
-        
+
         // Recompile decompiled source code and check errors
         assertTrue(CompilerUtil.compile("1.8", new InMemoryJavaSourceFileObject(internalClassName, source)));
     }
-    
+
     @Test
     public void testMap2() throws Exception {
         class MapIter2 {
@@ -582,7 +586,7 @@ public class MiscTest extends AbstractJdTest {
         }
         String internalClassName = MapIter2.class.getName().replace('.', '/');
         String source = decompileSuccess(new ClassPathLoader(), new PlainTextPrinter(), internalClassName);
-        
+
         // Recompile decompiled source code and check errors
         assertTrue(CompilerUtil.compile("1.8", new InMemoryJavaSourceFileObject(internalClassName, source)));
     }
@@ -598,7 +602,7 @@ public class MiscTest extends AbstractJdTest {
         }
         String internalClassName = MapTest.class.getName().replace('.', '/');
         String source = decompileSuccess(new ClassPathLoader(), new PlainTextPrinter(), internalClassName);
-        
+
         // Recompile decompiled source code and check errors
         assertTrue(CompilerUtil.compile("1.8", new InMemoryJavaSourceFileObject(internalClassName, source)));
     }
@@ -616,24 +620,24 @@ public class MiscTest extends AbstractJdTest {
             // Recompile decompiled source code and check errors
             InMemoryClassLoader classLoader = new InMemoryClassLoader();
             assertTrue(CompilerUtil.compile("1.8", classLoader, new InMemoryJavaSourceFileObject(internalClassName, source)));
-            
+
             Class<?> recompiledClass = classLoader.findClassByInternalName(internalClassName);
             assertNotNull(recompiledClass);
             assertTrue(classLoader.canLoad(internalClassName));
             assertNotNull(classLoader.load(internalClassName));
-            
+
             String eclipseSource = decompileSuccess(classLoader, new PlainTextPrinter(), internalClassName);
 
             // Check decompiled source code
             assertEquals(source, eclipseSource);
         }
     }
-    
+
     @Test
     public void testIndexedStringMapLambda() throws Exception {
         String internalClassName = IndexedStringMapLambda.class.getName().replace('.', '/');
         String source = decompileSuccess(new ClassPathLoader(), new PlainTextPrinter(), internalClassName);
-        
+
         // Check decompiled source code
         assertTrue(source.matches(PatternMaker.make("this.map.forEach((key, value) -> result.put(key, (List)value));")));
 
@@ -651,10 +655,10 @@ public class MiscTest extends AbstractJdTest {
         }
         String internalClassName = Union.class.getName().replace('.', '/');
         String source = decompileSuccess(new ClassPathLoader(), new PlainTextPrinter(), internalClassName);
-        
+
         // Check decompiled source code
         assertTrue(source.matches(PatternMaker.make("SetView<Number> union = Sets.union(ints, doubles);")));
-        
+
         // Recompile decompiled source code and check errors
         assertTrue(CompilerUtil.compile("1.8", new InMemoryJavaSourceFileObject(internalClassName, source)));
     }
@@ -669,14 +673,14 @@ public class MiscTest extends AbstractJdTest {
         }
         String internalClassName = Union2.class.getName().replace('.', '/');
         String source = decompileSuccess(new ClassPathLoader(), new PlainTextPrinter(), internalClassName);
-        
+
         // Check decompiled source code
         assertTrue(source.matches(PatternMaker.make("SetView<V> union = Sets.union(vs, ws);")));
-        
+
         // Recompile decompiled source code and check errors
         assertTrue(CompilerUtil.compile("1.8", new InMemoryJavaSourceFileObject(internalClassName, source)));
     }
-    
+
     @Test
     public void testUnion3() throws Exception {
         class Union3 {
@@ -691,14 +695,14 @@ public class MiscTest extends AbstractJdTest {
         }
         String internalClassName = Union3.class.getName().replace('.', '/');
         String source = decompileSuccess(new ClassPathLoader(), new PlainTextPrinter(), internalClassName);
-        
+
         // Check decompiled source code
         assertTrue(source.matches(PatternMaker.make("SetView<V> union = Sets.union(vs, ws);")));
-        
+
         // Recompile decompiled source code and check errors
         assertTrue(CompilerUtil.compile("1.8", new InMemoryJavaSourceFileObject(internalClassName, source)));
     }
-    
+
     @Test
     public void testManagerImpl() throws Exception {
         abstract class ManagerImpl {
@@ -715,18 +719,18 @@ public class MiscTest extends AbstractJdTest {
         }
         String internalClassName = ManagerImpl.class.getName().replace('.', '/');
         String source = decompileSuccess(new ClassPathLoader(), new PlainTextPrinter(), internalClassName);
-        
+
         // Recompile decompiled source code and check errors
         assertTrue(CompilerUtil.compile("1.8", new InMemoryJavaSourceFileObject(internalClassName, source)));
     }
-    
+
     @Test
     public void testManagerImpl2() throws Exception {
         abstract class ManagerImpl2 {
-            static SMTPManagerFactory FACTORY;            
+            static SMTPManagerFactory FACTORY;
 
             abstract <X extends AbstractManager, Y> X getManager(ManagerFactory<X, Y> factory);
-            
+
             @SuppressWarnings("unused")
             SmtpManager getManager() {
                 return (SmtpManager) getManager(FACTORY);
@@ -734,11 +738,11 @@ public class MiscTest extends AbstractJdTest {
         }
         String internalClassName = ManagerImpl2.class.getName().replace('.', '/');
         String source = decompileSuccess(new ClassPathLoader(), new PlainTextPrinter(), internalClassName);
-        
+
         // Recompile decompiled source code and check errors
         assertTrue(CompilerUtil.compile("1.8", new InMemoryJavaSourceFileObject(internalClassName, source)));
     }
-    
+
     @Test
     public void testManager1() throws Exception {
         class Manager1 {
@@ -752,11 +756,11 @@ public class MiscTest extends AbstractJdTest {
 
         // Check decompiled source code
         assertTrue(source.matches(PatternMaker.make("return (M)AbstractManager.getManager(name, factory, data);")));
-        
+
         // Recompile decompiled source code and check errors
         assertTrue(CompilerUtil.compile("1.8", new InMemoryJavaSourceFileObject(internalClassName, source)));
     }
-    
+
     @Test
     public void testManager2() throws Exception {
         class Manager2 {
@@ -767,14 +771,14 @@ public class MiscTest extends AbstractJdTest {
         }
         String internalClassName = Manager2.class.getName().replace('.', '/');
         String source = decompileSuccess(new ClassPathLoader(), new PlainTextPrinter(), internalClassName);
-        
+
         // Check decompiled source code
         assertTrue(source.matches(PatternMaker.make("return AbstractManager.getManager(name, factory, data);")));
-        
+
         // Recompile decompiled source code and check errors
         assertTrue(CompilerUtil.compile("1.8", new InMemoryJavaSourceFileObject(internalClassName, source)));
     }
-    
+
     @Test
     public void testPriviledgedAction() throws Exception {
         class PriviledgedAction {
@@ -843,7 +847,7 @@ public class MiscTest extends AbstractJdTest {
                         public Object convert(String value) throws Exception {
                             return Enum.valueOf((Class<? extends Enum>) type, value);
                         }
-                        
+
                         @Override
                         @SuppressWarnings({ "unchecked", "rawtypes" })
                         public String toString() {
@@ -867,12 +871,12 @@ public class MiscTest extends AbstractJdTest {
             Loader loader = new ZipLoader(is);
             String internalClassName = EnumMapUtil.class.getName().replace('.', '/');
             String source = decompileSuccess(loader, new PlainTextPrinter(), internalClassName);
-            
+
             // Recompile decompiled source code and check errors
             assertTrue(CompilerUtil.compile("1.8", new InMemoryJavaSourceFileObject(internalClassName, source)));
         }
     }
-    
+
     @Test
     public void testNamespacesStack() throws Exception {
         class NamespacesStack {
@@ -885,11 +889,11 @@ public class MiscTest extends AbstractJdTest {
         }
         String internalClassName = NamespacesStack.class.getName().replace('.', '/');
         String source = decompileSuccess(new ClassPathLoader(), new PlainTextPrinter(), internalClassName);
-        
+
         // Recompile decompiled source code and check errors
         assertTrue(CompilerUtil.compile("1.8", new InMemoryJavaSourceFileObject(internalClassName, source)));
     }
-    
+
     @Test
     public void testSafeList1() throws Exception {
         class SafeList1 {
@@ -904,19 +908,19 @@ public class MiscTest extends AbstractJdTest {
         }
         String internalClassName = SafeList1.class.getName().replace('.', '/');
         String source = decompileSuccess(new ClassPathLoader(), new PlainTextPrinter(), internalClassName);
-        
+
         // Check decompiled source code
         assertTrue(source.matches(PatternMaker.make("attributes.put(copyTagAttributes.getKey(), new HashSet<>(copyTagAttributes.getValue()));")));
 
         // Recompile decompiled source code and check errors
         assertTrue(CompilerUtil.compile("1.8", new InMemoryJavaSourceFileObject(internalClassName, source)));
     }
-    
+
     @Test
     public void testSafeList2() throws Exception {
         class SafeList2 {
             Map<String, Map<String, String>> enforcedAttributes;
-            
+
             @SuppressWarnings("unused")
             void test(String attrKey, String attrVal, String tagName) {
                 enforcedAttributes.get(tagName).put(attrKey, attrVal);
@@ -924,14 +928,14 @@ public class MiscTest extends AbstractJdTest {
         }
         String internalClassName = SafeList2.class.getName().replace('.', '/');
         String source = decompileSuccess(new ClassPathLoader(), new PlainTextPrinter(), internalClassName);
-        
+
         // Check decompiled source code
         assertTrue(source.matches(PatternMaker.make("enforcedAttributes.get(tagName).put(attrKey, attrVal);")));
 
         // Recompile decompiled source code and check errors
         assertTrue(CompilerUtil.compile("1.8", new InMemoryJavaSourceFileObject(internalClassName, source)));
     }
-    
+
     @Test
     public void testNewInstance() throws Exception {
         class NewInstance {
@@ -972,11 +976,11 @@ public class MiscTest extends AbstractJdTest {
         }
         String internalClassName = NewInstance2.class.getName().replace('.', '/');
         String source = decompileSuccess(new ClassPathLoader(), new PlainTextPrinter(), internalClassName);
-        
+
         // Recompile decompiled source code and check errors
         assertTrue(CompilerUtil.compile("1.8", new InMemoryJavaSourceFileObject(internalClassName, source)));
     }
-    
+
     @Test
     public void testToArray() throws Exception {
         class ToArray {
@@ -994,7 +998,7 @@ public class MiscTest extends AbstractJdTest {
         // Recompile decompiled source code and check errors
         assertTrue(CompilerUtil.compile("1.8", new InMemoryJavaSourceFileObject(internalClassName, source)));
     }
-    
+
     @Test
     public void testClassArray1() throws Exception {
         class ClassArray1 {
@@ -1007,14 +1011,14 @@ public class MiscTest extends AbstractJdTest {
         }
         String internalClassName = ClassArray1.class.getName().replace('.', '/');
         String source = decompileSuccess(new ClassPathLoader(), new PlainTextPrinter(), internalClassName);
-        
+
         // Check decompiled source code
         assertTrue(source.matches(PatternMaker.make("List<Class<? extends Date>> dateClassList = Arrays.asList(Timestamp.class, Date.class, java.sql.Date.class, Time.class);")));
-        
+
         // Recompile decompiled source code and check errors
         assertTrue(CompilerUtil.compile("1.7", new InMemoryJavaSourceFileObject(internalClassName, source)));
     }
-    
+
     @Test
     public void testClassArray2() throws Exception {
         class ClassArray2 {
@@ -1026,14 +1030,14 @@ public class MiscTest extends AbstractJdTest {
         }
         String internalClassName = ClassArray2.class.getName().replace('.', '/');
         String source = decompileSuccess(new ClassPathLoader(), new PlainTextPrinter(), internalClassName);
-        
+
         // Check decompiled source code
         assertTrue(source.matches(PatternMaker.make("for (Class<? extends Date> dateClass : Arrays.asList(Timestamp.class, Date.class, java.sql.Date.class, Time.class))")));
 
         // Recompile decompiled source code and check errors
         assertTrue(CompilerUtil.compile("1.7", new InMemoryJavaSourceFileObject(internalClassName, source)));
     }
-    
+
     @Test
     public void testListArray() throws Exception {
         class ListArray {
@@ -1042,11 +1046,11 @@ public class MiscTest extends AbstractJdTest {
         }
         String internalClassName = ListArray.class.getName().replace('.', '/');
         String source = decompileSuccess(new ClassPathLoader(), new PlainTextPrinter(), internalClassName);
-        
+
         // Recompile decompiled source code and check errors
         assertTrue(CompilerUtil.compile("1.8", new InMemoryJavaSourceFileObject(internalClassName, source)));
     }
-    
+
     @Test
     public void testJoin() throws Exception {
         class Join {
@@ -1057,7 +1061,7 @@ public class MiscTest extends AbstractJdTest {
         }
         String internalClassName = Join.class.getName().replace('.', '/');
         String source = decompileSuccess(new ClassPathLoader(), new PlainTextPrinter(), internalClassName);
-        
+
         // Recompile decompiled source code and check errors
         assertTrue(CompilerUtil.compile("1.8", new InMemoryJavaSourceFileObject(internalClassName, source)));
     }
@@ -1072,23 +1076,23 @@ public class MiscTest extends AbstractJdTest {
         }
         String internalClassName = Join2.class.getName().replace('.', '/');
         String source = decompileSuccess(new ClassPathLoader(), new PlainTextPrinter(), internalClassName);
-        
+
         // Check decompiled source code
         assertTrue(source.matches(PatternMaker.make("return CommandLine.Help.join(ansi, new String[] { values }, new StringBuilder(), params);")));
 
         // Recompile decompiled source code and check errors
         assertTrue(CompilerUtil.compile("1.6", new InMemoryJavaSourceFileObject(internalClassName, source)));
     }
-    
+
     @Test
     public void testJdbcDatabaseManager() throws Exception {
         String internalClassName = JdbcDatabaseManager.class.getName().replace('.', '/');
         String source = decompileSuccess(new ClassPathLoader(), new PlainTextPrinter(), internalClassName);
-        
+
         // Recompile decompiled source code and check errors
         assertTrue(CompilerUtil.compile("1.8", new InMemoryJavaSourceFileObject(internalClassName, source)));
     }
-    
+
     @Test
     public void testEmptyCollectionToArray() throws Exception {
         class EmptyCollectionToArray {
@@ -1103,55 +1107,55 @@ public class MiscTest extends AbstractJdTest {
         // Recompile decompiled source code and check errors
         assertTrue(CompilerUtil.compile("1.8", new InMemoryJavaSourceFileObject(internalClassName, source)));
     }
-    
+
     @Test
     public void testInnerClassConstructorInvocation() throws Exception {
         try (InputStream is = this.getClass().getResourceAsStream("/jar/inner-class-constructor-call-jdk8u331.jar")) {
             Loader loader = new ZipLoader(is);
             String internalClassName = Parameterized.class.getName().replace('.', '/');
             String source = decompileSuccess(loader, new PlainTextPrinter(), internalClassName);
-            
+
             // Recompile decompiled source code and check errors
             assertTrue(CompilerUtil.compile("1.8", new InMemoryJavaSourceFileObject(internalClassName, source)));
         }
     }
-    
+
     @Test
     public void testBoundsAnonymous() throws Exception {
         try (InputStream is = this.getClass().getResourceAsStream("/jar/bounds-anonymous-jdk8u331.jar")) {
             Loader loader = new ZipLoader(is);
             String internalClassName = TestBoundsAnonymous.class.getName().replace('.', '/');
             String source = decompileSuccess(loader, new PlainTextPrinter(), internalClassName);
-            
+
             // Check decompiled source code
             assertTrue(source.matches(PatternMaker.make("Iterator<Class<?>> wrapped = Collections.<Class<?>>emptySet().iterator();")));
             assertTrue(source.matches(PatternMaker.make("Iterator<Class<?>> interfaces = Collections.<Class<?>>emptySet().iterator();")));
             assertTrue(source.matches(PatternMaker.make("Class<?> nextInterface = this.interfaces.next();")));
             assertTrue(source.matches(PatternMaker.make("Class<?> nextSuperclass = TestBoundsAnonymous.wrapped.next();")));
-            
+
             // Recompile decompiled source code and check errors
             assertTrue(CompilerUtil.compile("1.8", new InMemoryJavaSourceFileObject(internalClassName, source)));
         }
     }
-    
+
     @Test
     public void testBoundsLambda() throws Exception {
         try (InputStream is = this.getClass().getResourceAsStream("/jar/bounds-lambda-jdk8u331.jar")) {
             Loader loader = new ZipLoader(is);
             String internalClassName = TestBoundsLambda.class.getName().replace('.', '/');
             String source = decompileSuccess(loader, new PlainTextPrinter(), internalClassName);
-            
+
             // Check decompiled source code
             assertTrue(source.matches(PatternMaker.make("Iterator<Class<?>> wrapped = Collections.<Class<?>>emptySet().iterator();")));
             assertTrue(source.matches(PatternMaker.make("Iterator interfaces = Collections.emptySet().iterator();")));
             assertTrue(source.matches(PatternMaker.make("Class<?> nextInterface = (Class)this.interfaces.next();")));
             assertTrue(source.matches(PatternMaker.make("Class<?> nextSuperclass = TestBoundsLambda.wrapped.next();")));
-            
+
             // Recompile decompiled source code and check errors
             assertTrue(CompilerUtil.compile("1.8", new InMemoryJavaSourceFileObject(internalClassName, source)));
         }
     }
-    
+
     @Test
     public void testClassUtils() throws Exception {
         String internalClassName = ClassUtils.class.getName().replace('.', '/');
@@ -1160,7 +1164,7 @@ public class MiscTest extends AbstractJdTest {
         // Recompile decompiled source code and check errors
         assertTrue(CompilerUtil.compile("1.8", new InMemoryJavaSourceFileObject(internalClassName, source)));
     }
-    
+
     @Test
     public void testBounds2() throws Exception {
         class TestBounds2<K, V> {
@@ -1170,17 +1174,17 @@ public class MiscTest extends AbstractJdTest {
                 Iterable<V> transformedValues = FluentIterable.of(values).transform(valueTransformer);
             }
         }
-        
+
         String internalClassName = TestBounds2.class.getName().replace('.', '/');
         String source = decompileSuccess(new ClassPathLoader(), new PlainTextPrinter(), internalClassName);
-        
+
         // Check decompiled source code
         assertTrue(source.matches(PatternMaker.make("Iterable<V> transformedValues = FluentIterable.of(values).transform(this.valueTransformer);")));
-        
+
         // Recompile decompiled source code and check errors
         assertTrue(CompilerUtil.compile("1.8", new InMemoryJavaSourceFileObject(internalClassName, source)));
     }
-    
+
     @Test
     public void testBounds3() throws Exception {
         enum Bounds3 {
@@ -1195,28 +1199,28 @@ public class MiscTest extends AbstractJdTest {
         }
         String internalClassName = Bounds3.class.getName().replace('.', '/');
         String source = decompileSuccess(new ClassPathLoader(), new PlainTextPrinter(), internalClassName);
-        
+
         // Check decompiled source code
-        assertTrue(source.matches(PatternMaker.make("if (!EnumSet.copyOf(Collections.synchronizedList(expected)).contains(this.scopes.pop()))")));
-        
+        assertTrue(source.matches(PatternMaker.make("if (!EnumSet.copyOf((Collection)Collections.synchronizedList(expected)).contains(this.scopes.pop()))")));
+
         // Recompile decompiled source code and check errors
         assertTrue(CompilerUtil.compile("1.8", new InMemoryJavaSourceFileObject(internalClassName, source)));
     }
-    
+
     @Test
     public void testTriFunction() throws Exception {
-        
+
         String internalClassName = TriFunction.class.getName().replace('.', '/');
         String source = decompileSuccess(new ClassPathLoader(), new PlainTextPrinter(), internalClassName);
-        
+
         // Check decompiled source code
         assertTrue(source.matches(PatternMaker.make(": 63 */", "Objects.requireNonNull(after);")));
         assertTrue(source.matches(PatternMaker.make(": 64 */", "return (t, u, v) -> after.apply(apply(t, u, v));")));
-        
+
         // Recompile decompiled source code and check errors
         assertTrue(CompilerUtil.compile("1.8", new InMemoryJavaSourceFileObject(internalClassName, source)));
     }
-    
+
     @Test
     public void testHandleExact() throws Exception {
         class HandleExact {
@@ -1227,14 +1231,14 @@ public class MiscTest extends AbstractJdTest {
         }
         String internalClassName = HandleExact.class.getName().replace('.', '/');
         String source = decompileSuccess(new ClassPathLoader(), new PlainTextPrinter(), internalClassName);
-        
+
         // Check decompiled source code
         assertTrue(source.matches(PatternMaker.make("ServiceLoader<T> serviceLoader = (ServiceLoader<T>)handle.invokeExact(serviceType, classLoader);")));
-        
+
         // Recompile decompiled source code and check errors
         assertTrue(CompilerUtil.compile("1.8", new InMemoryJavaSourceFileObject(internalClassName, source)));
     }
-    
+
     @Test
     public void testOverload1() throws Exception {
         interface ILogger {
@@ -1251,10 +1255,10 @@ public class MiscTest extends AbstractJdTest {
         }
         String internalClassName = ILogger.class.getName().replace('.', '/');
         String source = decompileSuccess(new ClassPathLoader(), new PlainTextPrinter(), internalClassName);
-        
+
         // Check decompiled source code
         assertTrue(source.matches(PatternMaker.make("return isEnabled((Object)null, (Throwable)null);")));
-        
+
         // Recompile decompiled source code and check errors
         assertTrue(CompilerUtil.compile("1.8", new InMemoryJavaSourceFileObject(internalClassName, source)));
     }
@@ -1271,11 +1275,11 @@ public class MiscTest extends AbstractJdTest {
         }
         String internalClassName = Overload.class.getName().replace('.', '/');
         String source = decompileSuccess(new ClassPathLoader(), new PlainTextPrinter(), internalClassName);
-        
+
         // Recompile decompiled source code and check errors
         assertTrue(CompilerUtil.compile("1.8", new InMemoryJavaSourceFileObject(internalClassName, source)));
     }
-    
+
     @Test
     public void testSuperDefault() throws Exception {
         abstract class SuperDefault implements IDefault {
@@ -1285,10 +1289,10 @@ public class MiscTest extends AbstractJdTest {
         }
         String internalClassName = SuperDefault.class.getName().replace('.', '/');
         String source = decompileSuccess(new ClassPathLoader(), new PlainTextPrinter(), internalClassName);
-        
+
         // Check decompiled source code
         assertTrue(source.matches(PatternMaker.make("IDefault.super.test(o);")));
-        
+
         // Recompile decompiled source code and check errors
         assertTrue(CompilerUtil.compile("1.8", new InMemoryJavaSourceFileObject(internalClassName, source)));
     }
@@ -1303,10 +1307,10 @@ public class MiscTest extends AbstractJdTest {
         }
         String internalClassName = VarArgTest1.class.getName().replace('.', '/');
         String source = decompileSuccess(new ClassPathLoader(), new PlainTextPrinter(), internalClassName);
-        
+
         // Check decompiled source code
         assertTrue(source.matches(PatternMaker.make("test(new Object[0]);")));
-        
+
         // Recompile decompiled source code and check errors
         assertTrue(CompilerUtil.compile("1.8", new InMemoryJavaSourceFileObject(internalClassName, source)));
     }
@@ -1321,36 +1325,36 @@ public class MiscTest extends AbstractJdTest {
         }
         String internalClassName = VarArgTest2.class.getName().replace('.', '/');
         String source = decompileSuccess(new ClassPathLoader(), new PlainTextPrinter(), internalClassName);
-        
+
         // Check decompiled source code
         assertTrue(source.matches(PatternMaker.make("test(new Object[] { 0, 1 }, 0, 1);")));
-        
+
         // Recompile decompiled source code and check errors
         assertTrue(CompilerUtil.compile("1.8", new InMemoryJavaSourceFileObject(internalClassName, source)));
     }
-    
+
     @Test
     public void testVarArgDefault() throws Exception {
         String internalClassName = IDefault.class.getName().replace('.', '/');
         String source = decompileSuccess(new ClassPathLoader(), new PlainTextPrinter(), internalClassName);
-        
+
         // Check decompiled source code
         assertTrue(source.matches(PatternMaker.make("default void test(Object... o) {}")));
-        
+
         // Recompile decompiled source code and check errors
         assertTrue(CompilerUtil.compile("1.8", new InMemoryJavaSourceFileObject(internalClassName, source)));
     }
-    
+
     @Test
     public void testLambdaStackWalker1() throws Exception {
         try (InputStream is = this.getClass().getResourceAsStream("/jar/lambda-stackwalker-jdk17.0.1.jar")) {
             Loader loader = new ZipLoader(is);
             String internalClassName = LambdaStackWalker1.class.getName().replace('.', '/');
             String source = decompileSuccess(loader, new PlainTextPrinter(), internalClassName);
-            
+
             // Check decompiled source code
             assertTrue(source.matches(PatternMaker.make("return StackWalker.getInstance().walk(s -> s.map(StackWalker.StackFrame::getDeclaringClass).dropWhile(clazz -> !sentinelClass.equals(clazz)).findFirst().orElse(null));")));
-            
+
             // Recompile decompiled source code and check errors
             assertTrue(CompilerUtil.compile("1.8", new InMemoryJavaSourceFileObject(internalClassName, source)));
         }
@@ -1362,31 +1366,31 @@ public class MiscTest extends AbstractJdTest {
             Loader loader = new ZipLoader(is);
             String internalClassName = LambdaStackWalker2.class.getName().replace('.', '/');
             String source = decompileSuccess(loader, new PlainTextPrinter(), internalClassName);
-            
+
             // Check decompiled source code
             assertTrue(source.matches(PatternMaker.make("return StackWalker.getInstance().walk(s -> s.findFirst()).map(s -> s.getDeclaringClass()).orElse(null);")));
             assertTrue(source.matches(PatternMaker.make("return StackWalker.getInstance().walk(s -> s.findFirst()).map(StackWalker.StackFrame::getDeclaringClass).orElse(null);")));
-            
+
             // Recompile decompiled source code and check errors
             assertTrue(CompilerUtil.compile("1.8", new InMemoryJavaSourceFileObject(internalClassName, source)));
         }
     }
-    
+
     public void testNoDiamondJDK6() throws Exception {
         try (InputStream is = this.getClass().getResourceAsStream("/jar/entries-test-jdk6u119.jar")) {
             Loader loader = new ZipLoader(is);
             String internalClassName = Entries.class.getName().replace('.', '/');
             String source = decompileSuccess(loader, new PlainTextPrinter(), internalClassName);
-            
+
             // Check decompiled source code
             assertTrue(source.matches(PatternMaker.make("Map<Integer, String[]> cCache = new HashMap<Integer, String[]>();")));
             assertTrue(source.matches(PatternMaker.make("for (Map.Entry<String, String> entry : new ArrayList<Map.Entry<String, String>>(this.entries.values()))")));
-            
+
             // Recompile decompiled source code and check errors
             assertTrue(CompilerUtil.compile("1.8", new InMemoryJavaSourceFileObject(internalClassName, source)));
         }
     }
-    
+
     @Test
     public void testDiamond() throws Exception {
         class Entries {
@@ -1401,10 +1405,10 @@ public class MiscTest extends AbstractJdTest {
         }
         String internalClassName = Entries.class.getName().replace('.', '/');
         String source = decompileSuccess(new ClassPathLoader(), new PlainTextPrinter(), internalClassName);
-        
+
         // Check decompiled source code
         assertTrue(source.matches(PatternMaker.make("for (Map.Entry<String, String> entry : new ArrayList<>(this.entries.values()))")));
-        
+
         // Recompile decompiled source code and check errors
         assertTrue(CompilerUtil.compile("1.8", new InMemoryJavaSourceFileObject(internalClassName, source)));
     }
@@ -1434,7 +1438,7 @@ public class MiscTest extends AbstractJdTest {
         }
         String internalClassName = LambdaVariables.class.getName().replace('.', '/');
         String source = decompileSuccess(new ClassPathLoader(), new PlainTextPrinter(), internalClassName);
-        
+
         // Check decompiled source code
         assertTrue(source.matches(PatternMaker.make("void test(String str, int intger) {")));
         assertTrue(source.matches(PatternMaker.make("  char chrctr = Character.MAX_VALUE;")));
@@ -1448,11 +1452,11 @@ public class MiscTest extends AbstractJdTest {
         assertTrue(source.matches(PatternMaker.make("        System.out.print(chrctr);")));
         assertTrue(source.matches(PatternMaker.make("        return Integer.compare(a, b);")));
 
-        
+
         // Recompile decompiled source code and check errors
         assertTrue(CompilerUtil.compile("1.8", new InMemoryJavaSourceFileObject(internalClassName, source)));
     }
-    
+
     @Test
     public void testEmptyEnum() throws Exception {
         enum EmptyEnum {
@@ -1462,16 +1466,16 @@ public class MiscTest extends AbstractJdTest {
         }
         String internalClassName = EmptyEnum.class.getName().replace('.', '/');
         String source = decompileSuccess(new ClassPathLoader(), new PlainTextPrinter(), internalClassName);
-        
+
         // Recompile decompiled source code and check errors
         assertTrue(CompilerUtil.compile("1.8", new InMemoryJavaSourceFileObject(internalClassName, source)));
     }
-    
+
     @Test
     public void testBuilder() throws Exception {
         String internalClassName = FileAppender.class.getName().replace('.', '/');
         String source = decompileSuccess(new ClassPathLoader(), new PlainTextPrinter(), internalClassName);
-        
+
         // Recompile decompiled source code and check errors
         assertTrue(CompilerUtil.compile("1.8", new InMemoryJavaSourceFileObject(internalClassName, source)));
     }
@@ -1484,7 +1488,7 @@ public class MiscTest extends AbstractJdTest {
         // Recompile decompiled source code and check errors
         assertTrue(CompilerUtil.compile("1.8", new InMemoryJavaSourceFileObject(internalClassName, source)));
     }
-    
+
     @Test
     public void testIterableUtils() throws Exception {
         abstract class IterableUtils {
@@ -1497,7 +1501,7 @@ public class MiscTest extends AbstractJdTest {
         }
         String internalClassName = IterableUtils.class.getName().replace('.', '/');
         String source = decompileSuccess(new ClassPathLoader(), new PlainTextPrinter(), internalClassName);
-        
+
         // Check decompiled source code
         assertTrue(source.matches(PatternMaker.make("R singlePartition = partitionFactory.create();")));
         assertTrue(source.matches(PatternMaker.make("CollectionUtils.addAll(singlePartition, iterable);")));
@@ -1506,7 +1510,7 @@ public class MiscTest extends AbstractJdTest {
         // Recompile decompiled source code and check errors
         assertTrue(CompilerUtil.compile("1.8", new InMemoryJavaSourceFileObject(internalClassName, source)));
     }
-    
+
     public void testSerializedForm() throws Exception {
         class SerializedForm {
 
@@ -1520,16 +1524,16 @@ public class MiscTest extends AbstractJdTest {
         }
         String internalClassName = SerializedForm.class.getName().replace('.', '/');
         String source = decompileSuccess(new ClassPathLoader(), new PlainTextPrinter(), internalClassName);
-        
+
         // Recompile decompiled source code and check errors
         assertTrue(CompilerUtil.compile("1.8", new InMemoryJavaSourceFileObject(internalClassName, source)));
     }
-    
+
     @Test
     public void testJSONUtils() throws Exception {
         String internalClassName = JSONUtils.class.getName().replace('.', '/');
         String source = decompileSuccess(new ClassPathLoader(), new PlainTextPrinter(), internalClassName);
-        
+
         // Recompile decompiled source code and check errors
         assertTrue(CompilerUtil.compile("1.8", new InMemoryJavaSourceFileObject(internalClassName, source)));
     }
@@ -1552,7 +1556,7 @@ public class MiscTest extends AbstractJdTest {
         // Recompile decompiled source code and check errors
         assertTrue(CompilerUtil.compile("1.8", new InMemoryJavaSourceFileObject(internalClassName, source)));
     }
-    
+
     @Test
     public void testCSS() throws Exception {
         String internalClassName = javax.swing.text.html.CSS.class.getName().replace('.', '/');
@@ -1574,8 +1578,109 @@ public class MiscTest extends AbstractJdTest {
         }
         String internalClassName = VarArg.class.getName().replace('.', '/');
         String source = decompileSuccess(new ClassPathLoader(), new PlainTextPrinter(), internalClassName);
-        
+
         // Recompile decompiled source code and check errors
         assertTrue(CompilerUtil.compile("1.8", new InMemoryJavaSourceFileObject(internalClassName, source)));
     }
+
+    @Test
+    public void testIOBinaryOperator() throws Exception {
+        String internalClassName = IOBinaryOperator.class.getName().replace('.', '/');
+        String source = decompileSuccess(new ClassPathLoader(), new PlainTextPrinter(), internalClassName);
+
+        // Recompile decompiled source code and check errors
+        assertTrue(CompilerUtil.compile("1.8", new InMemoryJavaSourceFileObject(internalClassName, source)));
+    }
+
+    @Test
+    public void testToList() throws Exception {
+        String internalClassName = org.apache.commons.io.filefilter.FileFilterUtils.class.getName().replace('.', '/');
+        String source = decompileSuccess(new ClassPathLoader(), new PlainTextPrinter(), internalClassName);
+
+        // Recompile decompiled source code and check errors
+        assertTrue(CompilerUtil.compile("1.8", new InMemoryJavaSourceFileObject(internalClassName, source)));
+    }
+
+    @Test
+    public void testAsBaseStream() throws Exception {
+        String internalClassName = IOBaseStream.class.getName().replace('.', '/');
+        String source = decompileSuccess(new ClassPathLoader(), new PlainTextPrinter(), internalClassName);
+
+        // Recompile decompiled source code and check errors
+        assertTrue(CompilerUtil.compile("1.8", new InMemoryJavaSourceFileObject(internalClassName, source)));
+    }
+
+    @Test
+    public void testFailableFunction() throws Exception {
+        String internalClassName = FailableFunction.class.getName().replace('.', '/');
+        String source = decompileSuccess(new ClassPathLoader(), new PlainTextPrinter(), internalClassName);
+
+        // Recompile decompiled source code and check errors
+        assertTrue(CompilerUtil.compile("1.8", new InMemoryJavaSourceFileObject(internalClassName, source)));
+    }
+
+    @Test
+    public void testElement() throws Exception {
+        String internalClassName = Element.class.getName().replace('.', '/');
+        String source = decompileSuccess(new ClassPathLoader(), new PlainTextPrinter(), internalClassName);
+
+        // Recompile decompiled source code and check errors
+        assertTrue(CompilerUtil.compile("1.8", new InMemoryJavaSourceFileObject(internalClassName, source)));
+    }
+
+    @Test
+    public void testUnmodifiableBidiMap() throws Exception {
+        String internalClassName = UnmodifiableBidiMap.class.getName().replace('.', '/');
+        String source = decompileSuccess(new ClassPathLoader(), new PlainTextPrinter(), internalClassName);
+
+        // Recompile decompiled source code and check errors
+        assertTrue(CompilerUtil.compile("1.8", new InMemoryJavaSourceFileObject(internalClassName, source)));
+    }
+
+    @Test
+    public void testUncheckedIOSpliterator() throws Exception {
+        String internalClassName = "org/apache/commons/io/function/UncheckedIOSpliterator";
+        String source = decompileSuccess(new ClassPathLoader(), new PlainTextPrinter(), internalClassName);
+
+        // Recompile decompiled source code and check errors
+        assertTrue(CompilerUtil.compile("1.8", new InMemoryJavaSourceFileObject(internalClassName, source)));
+    }
+
+    @Test
+    public void testStreams() throws Exception {
+        String internalClassName = Streams.class.getName().replace('.', '/');
+        String source = decompileSuccess(new ClassPathLoader(), new PlainTextPrinter(), internalClassName);
+
+        // Recompile decompiled source code and check errors
+        assertTrue(CompilerUtil.compile("1.8", new InMemoryJavaSourceFileObject(internalClassName, source)));
+    }
+
+    @Test
+    public void testLockableFileWriter() throws Exception {
+        class LockableFileWriter {
+            @SuppressWarnings("unused")
+            public LockableFileWriter(File file, Charset charset, boolean append, String lockDir) throws IOException {
+                // init file to create/append
+                file = file.getAbsoluteFile();
+                if (file.getParentFile() != null) {
+                    FileUtils.forceMkdir(file.getParentFile());
+                }
+                if (file.isDirectory()) {
+                    throw new IOException("File specified is a directory");
+                }
+                // init lock file
+                if (lockDir == null) {
+                    lockDir = System.getProperty("java.io.tmpdir");
+                }
+                File lockDirFile = new File(lockDir);
+                FileUtils.forceMkdir(lockDirFile);
+            }
+        }
+        String internalClassName = LockableFileWriter.class.getName().replace('.', '/');
+        String source = decompileSuccess(new ClassPathLoader(), new PlainTextPrinter(), internalClassName);
+
+        // Recompile decompiled source code and check errors
+        assertTrue(CompilerUtil.compile("1.8", new InMemoryJavaSourceFileObject(internalClassName, source)));
+    }
+
 }
