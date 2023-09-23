@@ -404,7 +404,9 @@ public class StatementMaker {
         if (!subStatements.isEmpty() && subStatements.getFirst().isMonitorEnterStatement()) {
             statements.add(subStatements.removeFirst());
         }
-
+        if (subStatements.isEmpty() && !stack.isEmpty()) {
+            subStatements.add(new ReturnExpressionStatement(stack.pop()));
+        }
         return subStatements;
     }
 
@@ -689,11 +691,7 @@ public class StatementMaker {
         } else {
             makeStatements(watchdog, basicBlock.getCondition(), statements, jumps);
             Expression cond = stack.pop();
-            DefaultStack<Expression> backup = new DefaultStack<>(stack);
             Statements subStatements = makeSubStatements(watchdog, basicBlock.getSub1(), statements, jumps);
-            if (stack.size() != backup.size()) {
-                stack.copy(backup);
-            }
             statements.add(new IfStatement(cond, subStatements));
             int index = statements.size();
             makeStatements(watchdog, basicBlock.getNext(), statements, jumps);
