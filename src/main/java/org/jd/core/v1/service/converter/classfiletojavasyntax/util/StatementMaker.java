@@ -1083,12 +1083,8 @@ public class StatementMaker {
     }
 
     protected void replacePreOperatorWithPostOperator(Statements statements) {
-        Iterator<Statement> iterator = statements.iterator();
 
-        Statement statement;
-        while (iterator.hasNext()) {
-            statement = iterator.next();
-
+        for (Statement statement : statements) {
             if (statement.getExpression().isPreOperatorExpression()) {
                 Expression poe = statement.getExpression();
                 String operator = poe.getOperator();
