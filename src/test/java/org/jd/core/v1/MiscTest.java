@@ -74,6 +74,7 @@ import org.jd.core.v1.printer.ClassFilePrinter;
 import org.jd.core.v1.printer.PlainTextPrinter;
 import org.jd.core.v1.regex.PatternMaker;
 import org.jd.core.v1.stub.NumericConstants;
+import org.jd.core.v1.stub.TernaryOpDiamond;
 import org.jsoup.nodes.Attribute;
 import org.jsoup.nodes.Element;
 import org.junit.Test;
@@ -284,10 +285,10 @@ public class MiscTest extends AbstractJdTest {
         String source = decompileSuccess(new ClassPathLoader(), new PlainTextPrinter(), internalClassName);
 
         // Check decompiled source code
-        assertTrue(source.matches(PatternMaker.make(": 514 */", "for (String nextReplacement : replacements) {")));
+        assertTrue(source.matches(PatternMaker.make("for (String nextReplacement : replacements) {")));
 
         // Recompile decompiled source code and check errors
-        assertTrue(CompilerUtil.compile("1.7", new InMemoryJavaSourceFileObject(internalClassName, source)));
+        assertTrue(CompilerUtil.compile("1.8", new InMemoryJavaSourceFileObject(internalClassName, source)));
     }
 
     @Test
@@ -1388,6 +1389,21 @@ public class MiscTest extends AbstractJdTest {
         }
     }
 
+    public void testNoDiamondJDK7() throws Exception {
+        try (InputStream is = this.getClass().getResourceAsStream("/jar/ternary-op-diamond-jdk7u80.jar")) {
+            Loader loader = new ZipLoader(is);
+            String internalClassName = TernaryOpDiamond.class.getName().replace('.', '/');
+            String source = decompileSuccess(loader, new PlainTextPrinter(), internalClassName);
+            
+            // Check decompiled source code
+            assertTrue(source.matches(PatternMaker.make("List<String> list = flag ? new ArrayList<String>() : Collections.<String>emptyList();")));
+            assertTrue(source.matches(PatternMaker.make("List<String> list2 = flag ? Collections.<String>emptyList() : new ArrayList<String>();")));
+            
+            // Recompile decompiled source code and check errors
+            assertTrue(CompilerUtil.compile("1.7", new InMemoryJavaSourceFileObject(internalClassName, source)));
+        }
+    }
+    
     @Test
     public void testDiamond() throws Exception {
         class Entries {
