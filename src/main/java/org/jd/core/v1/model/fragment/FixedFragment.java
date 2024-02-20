@@ -9,9 +9,9 @@ package org.jd.core.v1.model.fragment;
 
 public abstract class FixedFragment implements Fragment {
     protected final int firstLineNumber;
-    protected final int lastLineNumber;
+    private final int lastLineNumber;
 
-    public FixedFragment(int firstLineNumber, int lastLineNumber) {
+    protected FixedFragment(int firstLineNumber, int lastLineNumber) {
         this.firstLineNumber = firstLineNumber;
         this.lastLineNumber = lastLineNumber;
     }

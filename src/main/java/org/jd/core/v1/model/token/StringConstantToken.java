@@ -7,24 +7,13 @@
 
 package org.jd.core.v1.model.token;
 
-public class StringConstantToken implements Token {
-
-    protected String text;
-    protected String ownerInternalName;
-
-    public StringConstantToken(String text, String ownerInternalName) {
-        this.text = text;
-        this.ownerInternalName = ownerInternalName;
-    }
-
-    public String getText() {
-        return text;
-    }
+public record StringConstantToken(String text, String ownerInternalName) implements Token {
 
     public String getOwnerInternalName() {
         return ownerInternalName;
     }
 
+    @Override
     public String toString() {
         return "StringConstantToken{'" + text + "'}";
     }

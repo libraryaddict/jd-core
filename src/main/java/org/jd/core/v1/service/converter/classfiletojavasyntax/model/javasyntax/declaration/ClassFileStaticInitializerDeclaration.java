@@ -7,8 +7,8 @@
 
 package org.jd.core.v1.service.converter.classfiletojavasyntax.model.javasyntax.declaration;
 
+import org.apache.bcel.classfile.Method;
 import org.jd.core.v1.model.classfile.ClassFile;
-import org.jd.core.v1.model.classfile.Method;
 import org.jd.core.v1.model.javasyntax.declaration.BaseFormalParameter;
 import org.jd.core.v1.model.javasyntax.declaration.StaticInitializerDeclaration;
 import org.jd.core.v1.model.javasyntax.statement.BaseStatement;
@@ -20,17 +20,17 @@ import org.jd.core.v1.model.javasyntax.type.TypeArgument;
 import java.util.Map;
 
 public class ClassFileStaticInitializerDeclaration extends StaticInitializerDeclaration implements ClassFileConstructorOrMethodDeclaration {
-    protected ClassFileBodyDeclaration bodyDeclaration;
-    protected ClassFile classFile;
-    protected Method method;
-    protected Map<String, TypeArgument> bindings;
-    protected Map<String, BaseType> typeBounds;
-    protected int firstLineNumber;
+    private final ClassFileBodyDeclaration bodyDeclaration;
+    private final ClassFile classFile;
+    private final Method method;
+    private final Map<String, TypeArgument> bindings;
+    private final Map<String, BaseType> typeBounds;
+    private int firstLineNumber;
 
     public ClassFileStaticInitializerDeclaration(
             ClassFileBodyDeclaration bodyDeclaration, ClassFile classFile, Method method, Map<String, TypeArgument> bindings,
             Map<String, BaseType> typeBounds, int firstLineNumber) {
-        super(method.getDescriptor(), null);
+        super(method.getSignature(), null);
         this.bodyDeclaration = bodyDeclaration;
         this.classFile = classFile;
         this.method = method;
@@ -42,7 +42,7 @@ public class ClassFileStaticInitializerDeclaration extends StaticInitializerDecl
     public ClassFileStaticInitializerDeclaration(
             ClassFileBodyDeclaration bodyDeclaration, ClassFile classFile, Method method, Map<String, TypeArgument> bindings,
             Map<String, BaseType> typeBounds, int firstLineNumber, BaseStatement statements) {
-        super(method.getDescriptor(), statements);
+        super(method.getSignature(), statements);
         this.bodyDeclaration = bodyDeclaration;
         this.classFile = classFile;
         this.method = method;
@@ -56,6 +56,11 @@ public class ClassFileStaticInitializerDeclaration extends StaticInitializerDecl
 
     @Override
     public void setFlags(int flags) {}
+
+    @Override
+    public BaseFormalParameter getFormalParameters() {
+        return null;
+    }
 
     @Override
     public void setFormalParameters(BaseFormalParameter formalParameters) {}
@@ -88,6 +93,11 @@ public class ClassFileStaticInitializerDeclaration extends StaticInitializerDecl
         return null;
     }
 
+    @Override
+    public BaseType getExceptionTypes() {
+        return null;
+    }
+    
     @Override
     public ClassFileBodyDeclaration getBodyDeclaration() {
         return bodyDeclaration;

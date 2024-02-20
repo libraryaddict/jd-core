@@ -12,10 +12,10 @@ public abstract class FlexibleFragment implements Fragment {
     protected       int maximalLineCount;
     protected       int initialLineCount;
     protected       int lineCount;
-    protected final int weight;
-    protected final String label;
+    private final int weight;
+    private final String label;
 
-    public FlexibleFragment(int minimalLineCount, int lineCount, int maximalLineCount, int weight, String label) {
+    protected FlexibleFragment(int minimalLineCount, int lineCount, int maximalLineCount, int weight, String label) {
         this.minimalLineCount = minimalLineCount;
         this.maximalLineCount = maximalLineCount;
         this.initialLineCount = this.lineCount = lineCount;
@@ -51,22 +51,20 @@ public abstract class FlexibleFragment implements Fragment {
         return label;
     }
 
-    public boolean incLineCount(boolean force) {
+    public boolean incLineCount(@SuppressWarnings("all") boolean force) {
         if (lineCount < maximalLineCount) {
             lineCount++;
             return true;
-        } else {
-            return false;
         }
+        return false;
     }
 
-    public boolean decLineCount(boolean force) {
+    public boolean decLineCount(@SuppressWarnings("all") boolean force) {
         if (lineCount > minimalLineCount) {
             lineCount--;
             return true;
-        } else {
-            return false;
         }
+        return false;
     }
 
     @Override

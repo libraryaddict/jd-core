@@ -11,10 +11,10 @@ import org.jd.core.v1.model.javasyntax.statement.Statement;
 import org.jd.core.v1.model.javasyntax.statement.StatementVisitor;
 
 public class ClassFileBreakContinueStatement implements Statement {
-    protected int offset;
-    protected int targetOffset;
-    protected boolean continueLabel;
-    protected Statement statement;
+    private final int offset;
+    private final int targetOffset;
+    private boolean continueLabel;
+    private Statement statement;
 
     public ClassFileBreakContinueStatement(int offset, int targetOffset) {
         this.offset = offset;
@@ -58,8 +58,7 @@ public class ClassFileBreakContinueStatement implements Statement {
     public String toString() {
         if (statement == null) {
             return "ClassFileBreakContinueStatement{}";
-        } else {
-            return "ClassFileBreakContinueStatement{" + statement + "}";
         }
+        return "ClassFileBreakContinueStatement{" + statement + "}";
     }
 }

@@ -10,51 +10,58 @@ package org.jd.core.v1;
 import org.jd.core.v1.api.Decompiler;
 import org.jd.core.v1.api.loader.Loader;
 import org.jd.core.v1.api.printer.Printer;
-import org.jd.core.v1.model.message.Message;
+import org.jd.core.v1.model.classfile.ClassFile;
+import org.jd.core.v1.model.javasyntax.CompilationUnit;
+import org.jd.core.v1.model.message.DecompileContext;
+import org.jd.core.v1.model.token.Token;
 import org.jd.core.v1.service.converter.classfiletojavasyntax.ClassFileToJavaSyntaxProcessor;
-import org.jd.core.v1.service.deserializer.classfile.DeserializeClassFileProcessor;
+import org.jd.core.v1.service.deserializer.classfile.ClassFileDeserializer;
 import org.jd.core.v1.service.fragmenter.javasyntaxtojavafragment.JavaSyntaxToJavaFragmentProcessor;
 import org.jd.core.v1.service.layouter.LayoutFragmentProcessor;
 import org.jd.core.v1.service.tokenizer.javafragmenttotoken.JavaFragmentToTokenProcessor;
 import org.jd.core.v1.service.writer.WriteTokenProcessor;
+import org.jd.core.v1.util.DefaultList;
 
+import java.io.IOException;
+import java.util.Collections;
 import java.util.Map;
 
 public class ClassFileToJavaSourceDecompiler implements Decompiler {
-    protected DeserializeClassFileProcessor deserializer = new DeserializeClassFileProcessor();
-    protected ClassFileToJavaSyntaxProcessor converter = new ClassFileToJavaSyntaxProcessor();
-    protected JavaSyntaxToJavaFragmentProcessor fragmenter = new JavaSyntaxToJavaFragmentProcessor();
-    protected LayoutFragmentProcessor layouter = new LayoutFragmentProcessor();
-    protected JavaFragmentToTokenProcessor tokenizer = new JavaFragmentToTokenProcessor();
-    protected WriteTokenProcessor writer = new WriteTokenProcessor();
+    private final ClassFileDeserializer deserializer = new ClassFileDeserializer();
+    private final ClassFileToJavaSyntaxProcessor converter = new ClassFileToJavaSyntaxProcessor();
+    private final JavaSyntaxToJavaFragmentProcessor fragmenter = new JavaSyntaxToJavaFragmentProcessor();
+    private final LayoutFragmentProcessor layouter = new LayoutFragmentProcessor();
+    private final JavaFragmentToTokenProcessor tokenizer = new JavaFragmentToTokenProcessor();
+    private final WriteTokenProcessor writer = new WriteTokenProcessor();
 
-    public void decompile(Loader loader, Printer printer, String internalName) throws Exception {
-        Message message = new Message();
-
-        message.setHeader("mainInternalTypeName", internalName);
-        message.setHeader("loader", loader);
-        message.setHeader("printer", printer);
-
-        decompile(message);
+    @Override
+    public DecompileContext decompile(Loader loader, Printer printer, String internalName) throws IOException {
+        return decompile(loader, printer, internalName, Collections.emptyMap());
     }
 
-    public void decompile(Loader loader, Printer printer, String internalName, Map<String, Object> configuration) throws Exception {
-        Message message = new Message();
+    @Override
+    public synchronized DecompileContext decompile(Loader loader, Printer printer, String internalName, Map<String, Object> configuration) throws IOException {
+        DecompileContext decompileContext = new DecompileContext();
 
-        message.setHeader("mainInternalTypeName", internalName);
-        message.setHeader("configuration", configuration);
-        message.setHeader("loader", loader);
-        message.setHeader("printer", printer);
+        decompileContext.setMainInternalTypeName(internalName);
+        decompileContext.setConfiguration(configuration);
+        decompileContext.setLoader(loader);
+        decompileContext.setPrinter(printer);
 
-        decompile(message);
+        decompile(decompileContext);
+        return decompileContext;
     }
 
-    protected void decompile(Message message) throws Exception {
-        this.deserializer.process(message);
-        this.converter.process(message);
-        this.fragmenter.process(message);
-        this.layouter.process(message);
-        this.tokenizer.process(message);
-        this.writer.process(message);
+    protected void decompile(DecompileContext decompileContext) throws IOException {
+        ClassFile classFile = this.deserializer.loadClassFile(decompileContext.getLoader(),
+                decompileContext.getMainInternalTypeName());
+        decompileContext.setClassFile(classFile);
+        decompileContext.setMainInternalTypeName(classFile.getInternalTypeName());
+        CompilationUnit compilationUnit = converter.process(decompileContext);
+        fragmenter.process(compilationUnit, decompileContext);
+        layouter.process(decompileContext);
+        DefaultList<Token> tokens = tokenizer.process(decompileContext.getBody());
+        decompileContext.setTokens(tokens);
+        writer.process(decompileContext);
     }
 }

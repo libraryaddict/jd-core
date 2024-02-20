@@ -8,17 +8,28 @@
 package org.jd.core.v1.service.converter.classfiletojavasyntax.visitor;
 
 import org.jd.core.v1.model.javasyntax.AbstractJavaSyntaxVisitor;
+import org.jd.core.v1.model.javasyntax.expression.LambdaIdentifiersExpression;
 import org.jd.core.v1.model.javasyntax.expression.LocalVariableReferenceExpression;
 import org.jd.core.v1.service.converter.classfiletojavasyntax.model.javasyntax.expression.ClassFileLocalVariableReferenceExpression;
 import org.jd.core.v1.service.converter.classfiletojavasyntax.model.localvariable.AbstractLocalVariable;
 
-public class SearchLocalVariableReferenceVisitor extends AbstractJavaSyntaxVisitor {
-    protected int index;
-    protected boolean found;
+import java.util.ArrayDeque;
+import java.util.Deque;
 
-    public void init(int index) {
+public class SearchLocalVariableReferenceVisitor extends AbstractJavaSyntaxVisitor {
+    private int index;
+    private boolean found;
+    private String name;
+    private Deque<LambdaIdentifiersExpression> lambdas = new ArrayDeque<>();
+
+    public void init(int index, String name) {
         this.index = index;
+        this.name = name;
         this.found = false;
+    }
+
+    public void init(AbstractLocalVariable localVariable) {
+        init(localVariable.getIndex(), localVariable.getName());
     }
 
     public boolean containsReference() {
@@ -28,10 +39,30 @@ public class SearchLocalVariableReferenceVisitor extends AbstractJavaSyntaxVisit
     @Override
     public void visit(LocalVariableReferenceExpression expression) {
         if (index < 0) {
-            found = true;
+            found = !isLambdaParameter(expression.getName());
         } else {
             ClassFileLocalVariableReferenceExpression referenceExpression = (ClassFileLocalVariableReferenceExpression) expression;
-            found |= referenceExpression.getLocalVariable().getIndex() == index;
+            if (lambdas.isEmpty()) {
+                found |= referenceExpression.getLocalVariable().getIndex() == index;
+            } else {
+                found |= referenceExpression.getLocalVariable().getName().equals(name);
+            }
         }
+    }
+    
+    @Override
+    public void visit(LambdaIdentifiersExpression expression) {
+        lambdas.push(expression);
+        super.visit(expression);
+        lambdas.pop();
+    }
+    
+    private boolean isLambdaParameter(String name) {
+        for (LambdaIdentifiersExpression lambda : lambdas) {
+            if (lambda.getParameterNames().contains(name)) {
+                return true;
+            }
+        }
+        return false;
     }
 }

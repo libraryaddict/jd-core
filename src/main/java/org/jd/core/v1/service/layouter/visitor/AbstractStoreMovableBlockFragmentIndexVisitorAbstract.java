@@ -8,10 +8,11 @@
 package org.jd.core.v1.service.layouter.visitor;
 
 public abstract class AbstractStoreMovableBlockFragmentIndexVisitorAbstract extends AbstractSearchMovableBlockFragmentVisitor {
-    protected int[] indexes = new int[10];
-    protected int size;
+    private int[] indexes = new int[10];
+    private int size;
     protected boolean enabled;
 
+    @Override
     public void reset() {
         this.size = 0;
         this.depth = 1;

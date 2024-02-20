@@ -7,14 +7,25 @@
 
 package org.jd.core.v1.service.converter.classfiletojavasyntax.visitor;
 
-import org.jd.core.v1.model.javasyntax.type.*;
+import org.jd.core.v1.model.javasyntax.type.AbstractTypeArgumentVisitor;
+import org.jd.core.v1.model.javasyntax.type.BaseTypeArgument;
+import org.jd.core.v1.model.javasyntax.type.DiamondTypeArgument;
+import org.jd.core.v1.model.javasyntax.type.GenericType;
+import org.jd.core.v1.model.javasyntax.type.InnerObjectType;
+import org.jd.core.v1.model.javasyntax.type.ObjectType;
+import org.jd.core.v1.model.javasyntax.type.PrimitiveType;
+import org.jd.core.v1.model.javasyntax.type.Type;
+import org.jd.core.v1.model.javasyntax.type.TypeArgument;
+import org.jd.core.v1.model.javasyntax.type.TypeArguments;
+import org.jd.core.v1.model.javasyntax.type.WildcardExtendsTypeArgument;
+import org.jd.core.v1.model.javasyntax.type.WildcardSuperTypeArgument;
+import org.jd.core.v1.model.javasyntax.type.WildcardTypeArgument;
 
 import static org.jd.core.v1.model.javasyntax.type.ObjectType.TYPE_CLASS;
 import static org.jd.core.v1.model.javasyntax.type.ObjectType.TYPE_CLASS_WILDCARD;
-import static org.jd.core.v1.model.javasyntax.type.ObjectType.TYPE_OBJECT;
 
 public class UpdateClassTypeArgumentsVisitor extends AbstractTypeArgumentVisitor {
-    protected BaseTypeArgument result;
+    private BaseTypeArgument result;
 
     public void init() {
         this.result = null;
@@ -26,27 +37,31 @@ public class UpdateClassTypeArgumentsVisitor extends AbstractTypeArgumentVisitor
 
     @Override
     public void visit(WildcardExtendsTypeArgument argument) {
-        Type type = argument.getType();
+        Type type = argument.type();
 
         type.accept(this);
 
-        result = (result == type) ? argument : new WildcardExtendsTypeArgument((Type)result);
+        result = result == type ? argument : new WildcardExtendsTypeArgument((Type)result);
     }
 
     @Override
     public void visit(WildcardSuperTypeArgument argument) {
-        Type type = argument.getType();
+        Type type = argument.type();
 
         type.accept(this);
 
-        result = (result == type) ? argument : new WildcardSuperTypeArgument((Type)result);
+        result = result == type ? argument : new WildcardSuperTypeArgument((Type)result);
     }
 
-    @Override public void visit(DiamondTypeArgument argument) { result = argument; }
-    @Override public void visit(WildcardTypeArgument argument) { result = argument; }
+    @Override
+    public void visit(DiamondTypeArgument argument) { result = argument; }
+    @Override
+    public void visit(WildcardTypeArgument argument) { result = argument; }
 
-    @Override public void visit(PrimitiveType type) { result = type; }
-    @Override public void visit(GenericType type) { result = type; }
+    @Override
+    public void visit(PrimitiveType type) { result = type; }
+    @Override
+    public void visit(GenericType type) { result = type; }
 
     @Override
     public void visit(ObjectType type) {
@@ -71,7 +86,7 @@ public class UpdateClassTypeArgumentsVisitor extends AbstractTypeArgumentVisitor
 
     @Override
     public void visit(InnerObjectType type) {
-        type.getOuterType().accept(this);
+        safeAccept(type.getOuterType());
 
         BaseTypeArgument typeArguments = type.getTypeArguments();
 
@@ -80,7 +95,7 @@ public class UpdateClassTypeArgumentsVisitor extends AbstractTypeArgumentVisitor
                 result = type;
             } else {
                 typeArguments.accept(this);
-                result = (result == typeArguments) ? type : type.createType(result);
+                result = result == typeArguments ? type : type.createType(result);
             }
         } else {
             ObjectType outerObjectType = (ObjectType) result;

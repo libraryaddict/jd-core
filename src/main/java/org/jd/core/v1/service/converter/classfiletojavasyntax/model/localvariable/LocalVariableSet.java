@@ -11,8 +11,8 @@ import org.jd.core.v1.model.javasyntax.type.GenericType;
 import org.jd.core.v1.model.javasyntax.type.ObjectType;
 
 public class LocalVariableSet {
-    protected AbstractLocalVariable[] array = new AbstractLocalVariable[10];
-    protected int size = 0;
+    private AbstractLocalVariable[] array = new AbstractLocalVariable[10];
+    private int size;
 
     public void add(int index, AbstractLocalVariable newLV) {
         if (index >= array.length) {
@@ -27,8 +27,10 @@ public class LocalVariableSet {
 
             if (lv == null) {
                 array[index] = newLV;
-            } else if (lv.fromOffset < newLV.fromOffset) {
-                assert newLV != lv;
+            } else if (lv.getFromOffset() < newLV.getFromOffset()) {
+                if (newLV == lv) {
+                    throw new IllegalStateException("newLV == lv");
+                }
                 newLV.setNext(lv);
                 array[index] = newLV;
             } else {
@@ -36,15 +38,19 @@ public class LocalVariableSet {
 
                 lv = lv.getNext();
 
-                while ((lv != null) && (lv.fromOffset > newLV.fromOffset)) {
+                while (lv != null && lv.getFromOffset() > newLV.getFromOffset()) {
                     previous = lv;
                     lv = lv.getNext();
                 }
 
-                assert previous != newLV;
+                if (previous == newLV) {
+                    throw new IllegalStateException("previous == newLV");
+                }
                 previous.setNext(newLV);
 
-                assert newLV != lv;
+                if (newLV == lv) {
+                    throw new IllegalStateException("newLV == lv");
+                }
                 newLV.setNext(lv);
             }
         }
@@ -74,7 +80,7 @@ public class LocalVariableSet {
             AbstractLocalVariable lv = array[index];
 
             while (lv != null) {
-                if (lv.fromOffset <= offset) {
+                if (lv.getFromOffset() <= offset) {
                     if (previous == null) {
                         array[index] = lv.getNext();
                     } else {
@@ -100,7 +106,7 @@ public class LocalVariableSet {
             AbstractLocalVariable lv = array[index];
 
             while (lv != null) {
-                if (lv.fromOffset <= offset) {
+                if (lv.getFromOffset() <= offset && offset <= lv.getToOffset() + 1) {
                     return lv;
                 }
 
@@ -121,7 +127,7 @@ public class LocalVariableSet {
             AbstractLocalVariable lv = array[index];
 
             while (lv != null) {
-                if (lv.fromOffset == offset) {
+                if (lv.getFromOffset() == offset) {
                     ObjectLocalVariable olv = (ObjectLocalVariable)lv;
                     olv.type = type;
                     break;
@@ -139,14 +145,16 @@ public class LocalVariableSet {
             AbstractLocalVariable lv = array[index];
 
             while (lv != null) {
-                if (lv.fromOffset == offset) {
-                    GenericLocalVariable glv = new GenericLocalVariable(index, lv.fromOffset, type, lv.name);
+                if (lv.getFromOffset() == offset) {
+                    GenericLocalVariable glv = new GenericLocalVariable(index, lv.getFromOffset(), type, lv.getName());
                     glv.setNext(lv.getNext());
 
                     if (previous == null) {
                         array[index] = glv;
                     } else {
-                        assert previous != glv;
+                        if (previous == glv) {
+                            throw new IllegalStateException("previous == glv");
+                        }
                         previous.setNext(glv);
                     }
 
@@ -175,7 +183,7 @@ public class LocalVariableSet {
                     lv = lv.getNext();
                 }
 
-                if (lv.fromOffset == 0) {
+                if (lv.getFromOffset() == 0) {
                     if (previous == null) {
                         array[index] = lv.getNext();
                     } else {

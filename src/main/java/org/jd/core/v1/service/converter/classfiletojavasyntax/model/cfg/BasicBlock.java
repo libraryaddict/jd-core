@@ -4,47 +4,48 @@
  * This is a Copyleft license that gives the user the right to use,
  * copy and modify the code freely for non-commercial purposes.
  */
-
 package org.jd.core.v1.service.converter.classfiletojavasyntax.model.cfg;
 
+import org.jd.core.v1.service.converter.classfiletojavasyntax.util.ByteCodeUtil;
 import org.jd.core.v1.util.DefaultList;
 
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.Set;
 
 public class BasicBlock {
     public static final int TYPE_DELETED                         = 0;
-    public static final int TYPE_START                           = (1 << 0);
-    public static final int TYPE_END                             = (1 << 1);
-    public static final int TYPE_STATEMENTS                      = (1 << 2);
-    public static final int TYPE_THROW                           = (1 << 3);
-    public static final int TYPE_RETURN                          = (1 << 4);
-    public static final int TYPE_RETURN_VALUE                    = (1 << 5);
-    public static final int TYPE_SWITCH_DECLARATION              = (1 << 6);
-    public static final int TYPE_SWITCH                          = (1 << 7);
-    public static final int TYPE_SWITCH_BREAK                    = (1 << 8);
-    public static final int TYPE_TRY_DECLARATION                 = (1 << 9);
-    public static final int TYPE_TRY                             = (1 << 10);
-    public static final int TYPE_TRY_JSR                         = (1 << 11);
-    public static final int TYPE_TRY_ECLIPSE                     = (1 << 12);
-    public static final int TYPE_JSR                             = (1 << 13);
-    public static final int TYPE_RET                             = (1 << 14);
-    public static final int TYPE_CONDITIONAL_BRANCH              = (1 << 15);
-    public static final int TYPE_IF                              = (1 << 16);
-    public static final int TYPE_IF_ELSE                         = (1 << 17);
-    public static final int TYPE_CONDITION                       = (1 << 18);
-    public static final int TYPE_CONDITION_OR                    = (1 << 19);
-    public static final int TYPE_CONDITION_AND                   = (1 << 20);
-    public static final int TYPE_CONDITION_TERNARY_OPERATOR      = (1 << 21);
-    public static final int TYPE_LOOP                            = (1 << 22);
-    public static final int TYPE_LOOP_START                      = (1 << 23);
-    public static final int TYPE_LOOP_CONTINUE                   = (1 << 24);
-    public static final int TYPE_LOOP_END                        = (1 << 25);
-    public static final int TYPE_GOTO                            = (1 << 26);
-    public static final int TYPE_INFINITE_GOTO                   = (1 << 27);
-    public static final int TYPE_GOTO_IN_TERNARY_OPERATOR        = (1 << 28);
-    public static final int TYPE_TERNARY_OPERATOR                = (1 << 29);
-    public static final int TYPE_JUMP                            = (1 << 30);
+    public static final int TYPE_START                           = 1 << 0;
+    public static final int TYPE_END                             = 1 << 1;
+    public static final int TYPE_STATEMENTS                      = 1 << 2;
+    public static final int TYPE_THROW                           = 1 << 3;
+    public static final int TYPE_RETURN                          = 1 << 4;
+    public static final int TYPE_RETURN_VALUE                    = 1 << 5;
+    public static final int TYPE_SWITCH_DECLARATION              = 1 << 6;
+    public static final int TYPE_SWITCH                          = 1 << 7;
+    public static final int TYPE_SWITCH_BREAK                    = 1 << 8;
+    public static final int TYPE_TRY_DECLARATION                 = 1 << 9;
+    public static final int TYPE_TRY                             = 1 << 10;
+    public static final int TYPE_TRY_JSR                         = 1 << 11;
+    public static final int TYPE_TRY_ECLIPSE                     = 1 << 12;
+    public static final int TYPE_JSR                             = 1 << 13;
+    public static final int TYPE_RET                             = 1 << 14;
+    public static final int TYPE_CONDITIONAL_BRANCH              = 1 << 15;
+    public static final int TYPE_IF                              = 1 << 16;
+    public static final int TYPE_IF_ELSE                         = 1 << 17;
+    public static final int TYPE_CONDITION                       = 1 << 18;
+    public static final int TYPE_CONDITION_OR                    = 1 << 19;
+    public static final int TYPE_CONDITION_AND                   = 1 << 20;
+    public static final int TYPE_CONDITION_TERNARY_OPERATOR      = 1 << 21;
+    public static final int TYPE_LOOP                            = 1 << 22;
+    public static final int TYPE_LOOP_START                      = 1 << 23;
+    public static final int TYPE_LOOP_CONTINUE                   = 1 << 24;
+    public static final int TYPE_LOOP_END                        = 1 << 25;
+    public static final int TYPE_GOTO                            = 1 << 26;
+    public static final int TYPE_INFINITE_GOTO                   = 1 << 27;
+    public static final int TYPE_GOTO_IN_TERNARY_OPERATOR        = 1 << 28;
+    public static final int TYPE_TERNARY_OPERATOR                = 1 << 29;
+    public static final int TYPE_JUMP                            = 1 << 30;
 
     public static final int GROUP_SINGLE_SUCCESSOR  = TYPE_START|TYPE_STATEMENTS|TYPE_TRY_DECLARATION|TYPE_JSR|TYPE_LOOP|TYPE_IF|TYPE_IF_ELSE|TYPE_SWITCH|TYPE_TRY|TYPE_TRY_JSR|TYPE_TRY_ECLIPSE|TYPE_GOTO|TYPE_GOTO_IN_TERNARY_OPERATOR|TYPE_TERNARY_OPERATOR;
     public static final int GROUP_SYNTHETIC         = TYPE_START|TYPE_END|TYPE_CONDITIONAL_BRANCH|TYPE_SWITCH_DECLARATION|TYPE_TRY_DECLARATION|TYPE_RET|TYPE_GOTO|TYPE_JUMP;
@@ -69,37 +70,38 @@ public class BasicBlock {
     public static final BasicBlock END = new ImmutableBasicBlock(TYPE_END);
     public static final BasicBlock RETURN = new ImmutableBasicBlock(TYPE_RETURN);
 
+    private final ControlFlowGraph controlFlowGraph;
 
-    protected ControlFlowGraph controlFlowGraph;
+    private final int index;
+    private int type;
 
-    protected int index;
-    protected int type;
+    private int fromOffset;
+    private int toOffset;
 
-    protected int fromOffset;
-    protected int toOffset;
-
-    protected BasicBlock next;
-    protected BasicBlock branch;
-    protected BasicBlock condition;
-    protected boolean inverseCondition;
-    protected BasicBlock sub1;
-    protected BasicBlock sub2;
-    protected DefaultList<ExceptionHandler> exceptionHandlers = EMPTY_EXCEPTION_HANDLERS;
-    protected DefaultList<SwitchCase> switchCases = EMPTY_SWITCH_CASES;
-    protected HashSet<BasicBlock> predecessors;
+    private BasicBlock next;
+    private BasicBlock branch;
+    private BasicBlock condition;
+    private boolean inverseCondition;
+    private boolean byteCodeParsed;
+    private BasicBlock sub1;
+    private BasicBlock sub2;
+    private DefaultList<ExceptionHandler> exceptionHandlers = EMPTY_EXCEPTION_HANDLERS;
+    private DefaultList<SwitchCase> switchCases = EMPTY_SWITCH_CASES;
+    private final Set<BasicBlock> predecessors;
+    private Loop enclosingLoop;
 
     public BasicBlock(ControlFlowGraph controlFlowGraph, int index, BasicBlock original) {
         this(controlFlowGraph, index, original, new HashSet<>());
     }
 
-    public BasicBlock(ControlFlowGraph controlFlowGraph, int index, BasicBlock original, HashSet<BasicBlock> predecessors) {
+    public BasicBlock(ControlFlowGraph controlFlowGraph, int index, BasicBlock original, Set<BasicBlock> predecessors) {
         this.controlFlowGraph = controlFlowGraph;
         this.index = index;
         this.type = original.type;
         this.fromOffset = original.fromOffset;
         this.toOffset = original.toOffset;
-        this.next = original.next;
-        this.branch = original.branch;
+        this.setNext(original.next);
+        this.setBranch(original.branch);
         this.condition = original.condition;
         this.inverseCondition = original.inverseCondition;
         this.sub1 = original.sub1;
@@ -113,7 +115,7 @@ public class BasicBlock {
         this(controlFlowGraph, index, type, fromOffset, toOffset, inverseCondition, new HashSet<>());
     }
 
-    public BasicBlock(ControlFlowGraph controlFlowGraph, int index, int type, int fromOffset, int toOffset, boolean inverseCondition, HashSet<BasicBlock> predecessors) {
+    public BasicBlock(ControlFlowGraph controlFlowGraph, int index, int type, int fromOffset, int toOffset, boolean inverseCondition, Set<BasicBlock> predecessors) {
         this.controlFlowGraph = controlFlowGraph;
         this.index = index;
         this.type = type;
@@ -216,7 +218,7 @@ public class BasicBlock {
         this.sub2 = sub2;
     }
 
-    public HashSet<BasicBlock> getPredecessors() {
+    public Set<BasicBlock> getPredecessors() {
         return predecessors;
     }
 
@@ -229,37 +231,33 @@ public class BasicBlock {
     }
 
     public boolean contains(BasicBlock basicBlock) {
-        if (next == basicBlock)
+        if (next == basicBlock || branch == basicBlock) {
             return true;
-
-        if (branch == basicBlock)
-            return true;
+        }
 
         for (ExceptionHandler exceptionHandler : exceptionHandlers) {
-            if (exceptionHandler.getBasicBlock() == basicBlock)
+            if (exceptionHandler.getBasicBlock() == basicBlock) {
                 return true;
+            }
         }
 
         for (SwitchCase switchCase : switchCases) {
-            if (switchCase.getBasicBlock() == basicBlock)
+            if (switchCase.getBasicBlock() == basicBlock) {
                 return true;
+            }
         }
 
-        if (sub1 == basicBlock)
-            return true;
-
-        if (sub2 == basicBlock)
-            return true;
-
-        return false;
+        return sub1 == basicBlock || sub2 == basicBlock;
     }
 
     public void replace(BasicBlock old, BasicBlock nevv) {
-        if (next == old)
-            next = nevv;
+        if (next == old) {
+            setNext(nevv);
+        }
 
-        if (branch == old)
-            branch = nevv;
+        if (branch == old) {
+            setBranch(nevv);
+        }
 
         for (ExceptionHandler exceptionHandler : exceptionHandlers) {
             exceptionHandler.replace(old, nevv);
@@ -269,25 +267,27 @@ public class BasicBlock {
             switchCase.replace(old, nevv);
         }
 
-        if (sub1 == old)
+        if (sub1 == old) {
             sub1 = nevv;
+        }
 
-        if (sub2 == old)
+        if (sub2 == old) {
             sub2 = nevv;
+        }
 
-        if (predecessors.contains(old)) {
-            predecessors.remove(old);
-            if (nevv != BasicBlock.END)
-                predecessors.add(nevv);
+        if (predecessors.remove(old) && nevv != END) {
+            predecessors.add(nevv);
         }
     }
 
-    public void replace(HashSet<BasicBlock> olds, BasicBlock nevv) {
-        if (olds.contains(next))
-            next = nevv;
+    public void replace(Set<BasicBlock> olds, BasicBlock nevv) {
+        if (olds.contains(next)) {
+            setNext(nevv);
+        }
 
-        if (olds.contains(branch))
-            branch = nevv;
+        if (olds.contains(branch)) {
+            setBranch(nevv);
+        }
 
         for (ExceptionHandler exceptionHandler : exceptionHandlers) {
             exceptionHandler.replace(olds, nevv);
@@ -297,11 +297,13 @@ public class BasicBlock {
             switchCase.replace(olds, nevv);
         }
 
-        if (olds.contains(sub1))
+        if (olds.contains(sub1)) {
             sub1 = nevv;
+        }
 
-        if (olds.contains(sub2))
+        if (olds.contains(sub2)) {
             sub2 = nevv;
+        }
 
         predecessors.removeAll(olds);
         predecessors.add(nevv);
@@ -311,7 +313,6 @@ public class BasicBlock {
         if (exceptionHandlers == EMPTY_EXCEPTION_HANDLERS) {
             // Add a first handler
             exceptionHandlers = new DefaultList<>();
-            exceptionHandlers.add(new ExceptionHandler(internalThrowableName, basicBlock));
         } else {
             for (ExceptionHandler exceptionHandler : exceptionHandlers) {
                 if (exceptionHandler.getBasicBlock() == basicBlock) {
@@ -320,16 +321,13 @@ public class BasicBlock {
                     return;
                 }
             }
-            // Not found -> Add a new handler
-            exceptionHandlers.add(new ExceptionHandler(internalThrowableName, basicBlock));
         }
+        exceptionHandlers.add(new ExceptionHandler(internalThrowableName, basicBlock));
     }
 
     public void inverseCondition() {
         switch (type) {
-            case TYPE_CONDITION:
-            case TYPE_CONDITION_TERNARY_OPERATOR:
-            case TYPE_GOTO_IN_TERNARY_OPERATOR:
+            case TYPE_CONDITION, TYPE_CONDITION_TERNARY_OPERATOR, TYPE_GOTO_IN_TERNARY_OPERATOR:
                 inverseCondition ^= true;
                 break;
             case TYPE_CONDITION_AND:
@@ -343,9 +341,13 @@ public class BasicBlock {
                 sub2.inverseCondition();
                 break;
             default:
-                assert false : "Invalid condition";
-                break;
+                throw new IllegalStateException("Invalid condition");
         }
+    }
+
+    public void endCondition() {
+        setNext(END);
+        setBranch(END);
     }
 
     public boolean matchType(int types) {
@@ -353,26 +355,35 @@ public class BasicBlock {
     }
 
     public String getTypeName() {
-        return TYPE_NAMES[(type==0) ? 0 : Integer.numberOfTrailingZeros(type)+1];
+        return TYPE_NAMES[type==0 ? 0 : Integer.numberOfTrailingZeros(type)+1];
+    }
+
+    public boolean isLoopExitCondition(Loop loop) {
+        return loop != null && index == loop.getStart().getIndex() && branch == LOOP_END;
+    }
+    
+    public boolean isOutsideLoop(Loop loop) {
+        return loop != null && !loop.getMembers().contains(this);
     }
 
     @Override
     public String toString() {
-        String s = "BasicBlock{index=" + index + ", from=" + fromOffset + ", to=" + toOffset + ", type=" + getTypeName() + ", inverseCondition=" + inverseCondition;
+        StringBuilder s = new StringBuilder("BasicBlock{index=").append(index).append(", from=").append(fromOffset).append(", to=").append(toOffset).append(", type=")
+                .append(getTypeName()).append(", inverseCondition=").append(inverseCondition);
 
         if (!predecessors.isEmpty()) {
-            s += ", predecessors=[";
+            s.append(", predecessors=[");
 
             Iterator<BasicBlock> iterator = predecessors.iterator();
 
             if (iterator.hasNext()) {
-                s += iterator.next().getIndex();
+                s.append(iterator.next().getIndex());
                 while (iterator.hasNext()) {
-                    s += ", " + iterator.next().getIndex();
+                    s.append(", ").append(iterator.next().getIndex());
                 }
             }
 
-            s += "]";
+            s.append("]");
         }
 
         return s + "}";
@@ -380,18 +391,24 @@ public class BasicBlock {
 
     @Override
     public int hashCode() {
-        return 378887654 + index;
+        return 378_887_654 + index;
     }
 
     @Override
-    public boolean equals(Object other) {
-        return index == ((BasicBlock)other).index;
+    public boolean equals(Object obj) {
+        if (this == obj) {
+            return true;
+        }
+        if (obj == null || obj.getClass() != this.getClass()) {
+            return false;
+        }
+        return index == ((BasicBlock) obj).index;
     }
 
     public static class ExceptionHandler {
-        protected String internalThrowableName;
-        protected DefaultList<String> otherInternalThrowableNames;
-        protected BasicBlock basicBlock;
+        private final String internalThrowableName;
+        private DefaultList<String> otherInternalThrowableNames;
+        private BasicBlock basicBlock;
 
         public ExceptionHandler(String internalThrowableName, BasicBlock basicBlock) {
             this.internalThrowableName = internalThrowableName;
@@ -415,49 +432,54 @@ public class BasicBlock {
         }
 
         public void addInternalThrowableName(String internalThrowableName) {
-            if (otherInternalThrowableNames == null)
+            if (otherInternalThrowableNames == null) {
                 otherInternalThrowableNames = new DefaultList<>();
+            }
             otherInternalThrowableNames.add(internalThrowableName);
         }
 
         public void replace(BasicBlock old, BasicBlock nevv) {
-            if (basicBlock == old)
+            if (basicBlock == old) {
                 basicBlock = nevv;
+            }
         }
 
-        public void replace(HashSet<BasicBlock> olds, BasicBlock nevv) {
-            if (olds.contains(basicBlock))
+        public void replace(Set<BasicBlock> olds, BasicBlock nevv) {
+            if (olds.contains(basicBlock)) {
                 basicBlock = nevv;
+            }
         }
 
         @Override
         public String toString() {
-            if (otherInternalThrowableNames == null)
+            if (otherInternalThrowableNames == null) {
                 return "BasicBlock.Handler{" + internalThrowableName + " -> " + basicBlock + "}";
-            else
-                return "BasicBlock.Handler{" + internalThrowableName + ", " + otherInternalThrowableNames + " -> " + basicBlock + "}";
+            }
+            return "BasicBlock.Handler{" + internalThrowableName + ", " + otherInternalThrowableNames + " -> " + basicBlock + "}";
         }
     }
 
     public static class SwitchCase {
-        protected int value;
-        protected int offset;
-        protected BasicBlock basicBlock;
-        protected boolean defaultCase;
+        private final int value;
+        private final int offset;
+        private BasicBlock basicBlock;
+        private final boolean defaultCase;
 
         public SwitchCase(BasicBlock basicBlock) {
-            this.offset = basicBlock.getFromOffset();
-            this.basicBlock = basicBlock;
-            this.defaultCase = true;
+            this(0, basicBlock, true);
         }
 
         public SwitchCase(int value, BasicBlock basicBlock) {
+            this(value, basicBlock, false);
+        }
+
+        public SwitchCase(int value, BasicBlock basicBlock, boolean defaultCase) {
             this.value = value;
             this.offset = basicBlock.getFromOffset();
             this.basicBlock = basicBlock;
-            this.defaultCase = false;
+            this.defaultCase = defaultCase;
         }
-
+        
         public int getValue() {
             return value;
         }
@@ -479,21 +501,23 @@ public class BasicBlock {
         }
 
         public void replace(BasicBlock old, BasicBlock nevv) {
-            if (basicBlock == old)
+            if (basicBlock == old) {
                 basicBlock = nevv;
+            }
         }
 
-        public void replace(HashSet<BasicBlock> olds, BasicBlock nevv) {
-            if (olds.contains(basicBlock))
+        public void replace(Set<BasicBlock> olds, BasicBlock nevv) {
+            if (olds.contains(basicBlock)) {
                 basicBlock = nevv;
+            }
         }
 
         @Override
         public String toString() {
-            if (defaultCase)
+            if (defaultCase) {
                 return "BasicBlock.SwitchCase{default: " + basicBlock + "}";
-            else
-                return "BasicBlock.SwitchCase{'" + value + "': " + basicBlock + "}";
+            }
+            return "BasicBlock.SwitchCase{'" + value + "': " + basicBlock + "}";
         }
     }
 
@@ -502,12 +526,65 @@ public class BasicBlock {
             super(
                 null, -1, type, 0, 0, true,
                 new HashSet<BasicBlock>() {
+
+                    private static final long serialVersionUID = 1L;
+
+                    @Override
                     public boolean add(BasicBlock e) { return false; }
                 }
             );
         }
 
+        @Override
         public int getFirstLineNumber() { return 0; }
+        @Override
         public int getLastLineNumber() { return 0; }
+    }
+
+    public BasicBlock getSinglePredecessor(int type) {
+        if (predecessors.size() != 1) {
+            return null;
+        }
+        return getFirstPredecessor(type);
+    }
+
+    public BasicBlock getFirstPredecessor(int type) {
+        for (BasicBlock predecessor : predecessors) {
+            if (predecessor.getType() == type) {
+                return predecessor;
+            }
+        }
+        return null;
+    }
+
+    public Loop getEnclosingLoop() {
+        return enclosingLoop;
+    }
+
+    public void setEnclosingLoop(Loop enclosingLoop) {
+        this.enclosingLoop = enclosingLoop;
+    }
+
+    public boolean isByteCodeParsed() {
+        return byteCodeParsed;
+    }
+
+    public void setByteCodeParsed(boolean byteCodeParsed) {
+        this.byteCodeParsed = byteCodeParsed;
+    }
+
+    public void flip() {
+        BasicBlock tmp = next;
+        setNext(branch);
+        setBranch(tmp);
+        ByteCodeUtil.invertLastOpCode(this);
+    }
+
+    public int getFromOpcode() {
+        return controlFlowGraph.getMethod().getCode().getCode()[fromOffset] & 255;
+    }
+
+    public int getToOpcode() {
+        return controlFlowGraph.getMethod().getCode().getCode()[toOffset] & 255;
     }
 }

@@ -1,3 +1,10 @@
+[![](https://jitpack.io/v/nbauma109/jd-core.svg)](https://jitpack.io/#nbauma109/jd-core)
+[![](https://jitci.com/gh/nbauma109/jd-core/svg)](https://jitci.com/gh/nbauma109/jd-core)
+[![CodeQL](https://github.com/nbauma109/jd-core/actions/workflows/codeql-analysis.yml/badge.svg?branch=master)](https://github.com/nbauma109/jd-core/actions/workflows/codeql-analysis.yml)
+[![Maven Release](https://github.com/nbauma109/jd-core/actions/workflows/maven.yml/badge.svg)](https://github.com/nbauma109/jd-core/actions/workflows/maven.yml)
+[![Github Release](https://github.com/nbauma109/jd-core/actions/workflows/release.yml/badge.svg)](https://github.com/nbauma109/jd-core/actions/workflows/release.yml)
+[![Coverage Status](https://codecov.io/gh/nbauma109/jd-core/branch/master/graph/badge.svg)](https://app.codecov.io/gh/nbauma109/jd-core)
+
 # JD-Core
 
 JD-Core is a JAVA decompiler written in JAVA.
@@ -6,14 +13,28 @@ JD-Core is a JAVA decompiler written in JAVA.
 [http://java-decompiler.github.io](https://java-decompiler.github.io)
 - JD-Core source code:
 [https://github.com/java-decompiler/jd-core](https://github.com/java-decompiler/jd-core)
-- JCenter Maven repository:
-[https://jcenter.bintray.com/](https://bintray.com/java-decompiler/maven/org.jd%3Ajd-core/_latestVersion)
+- Jitpack maven repository:
+[https://jitpack.io/](https://jitpack.io/)
 
 ## Description
 JD-Core is a standalone JAVA library containing the JAVA decompiler of
 "Java Decompiler project". It support Java 1.1.8 to Java 12.0,
 including Lambda expressions, method references and default methods.
 JD-Core is the engine of JD-GUI.
+
+## Strategy and goals 
+
+- Pursuing strategy described in this research paper : 
+[The Strengths and Behavioral Quirks of Java Bytecode Decompilers](https://www.researchgate.net/profile/Cesar_Soto-Valero/publication/334465294_The_Strengths_and_Behavioral_Quirks_of_Java_Bytecode_Decompilers/links/ )
+- Improved recompilation of decompiled source codes
+- Decompiling and recompiling without any errors :
+    - commons-io:commons-io:2.11.0
+    - commons-codec:commons-codec:1.15
+    - org.apache.commons:commons-collections4:4.4
+    - org.apache.commons:commons-lang3:3.12.0
+    - org.apache.logging.log4j:log4j-core:2.20.0
+    - junit:junit:4.13.2
+    - and more ... (check unit tests)
 
 ## How to build JD-Core ?
 ```
@@ -39,7 +60,7 @@ interface,
 ```java
 Loader loader = new Loader() {
     @Override
-    public byte[] load(String internalName) throws LoaderException {
+    public byte[] load(String internalName) throws IOException {
         InputStream is = this.getClass().getResourceAsStream("/" + internalName + ".class");
 
         if (is == null) {
@@ -55,8 +76,6 @@ Loader loader = new Loader() {
                 }
 
                 return out.toByteArray();
-            } catch (IOException e) {
-                throw new LoaderException(e);
             }
         }
     }

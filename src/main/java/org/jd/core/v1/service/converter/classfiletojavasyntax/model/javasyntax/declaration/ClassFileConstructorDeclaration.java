@@ -7,8 +7,8 @@
 
 package org.jd.core.v1.service.converter.classfiletojavasyntax.model.javasyntax.declaration;
 
+import org.apache.bcel.classfile.Method;
 import org.jd.core.v1.model.classfile.ClassFile;
-import org.jd.core.v1.model.classfile.Method;
 import org.jd.core.v1.model.javasyntax.declaration.BaseFormalParameter;
 import org.jd.core.v1.model.javasyntax.declaration.ConstructorDeclaration;
 import org.jd.core.v1.model.javasyntax.reference.BaseAnnotationReference;
@@ -21,19 +21,19 @@ import org.jd.core.v1.model.javasyntax.type.TypeArgument;
 import java.util.Map;
 
 public class ClassFileConstructorDeclaration extends ConstructorDeclaration implements ClassFileConstructorOrMethodDeclaration {
-    protected ClassFileBodyDeclaration bodyDeclaration;
-    protected ClassFile classFile;
-    protected Method method;
-    protected BaseType parameterTypes;
-    protected Map<String, TypeArgument> bindings;
-    protected Map<String, BaseType> typeBounds;
-    protected int firstLineNumber;
+    private final ClassFileBodyDeclaration bodyDeclaration;
+    private final ClassFile classFile;
+    private final Method method;
+    private final BaseType parameterTypes;
+    private final Map<String, TypeArgument> bindings;
+    private final Map<String, BaseType> typeBounds;
+    private int firstLineNumber;
 
     public ClassFileConstructorDeclaration(
             ClassFileBodyDeclaration bodyDeclaration, ClassFile classFile, Method method, BaseAnnotationReference annotationReferences,
             BaseTypeParameter typeParameters, BaseType parameterTypes, BaseType exceptionTypes, Map<String, TypeArgument> bindings,
             Map<String, BaseType> typeBounds, int firstLineNumber) {
-        super(annotationReferences, method.getAccessFlags(), typeParameters, null, exceptionTypes, method.getDescriptor(), null);
+        super(annotationReferences, method.getAccessFlags(), typeParameters, null, exceptionTypes, method.getSignature(), null);
         this.bodyDeclaration = bodyDeclaration;
         this.classFile = classFile;
         this.method = method;

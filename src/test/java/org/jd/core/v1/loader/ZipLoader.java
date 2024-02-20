@@ -7,56 +7,29 @@
 
 package org.jd.core.v1.loader;
 
-import org.jd.core.v1.api.loader.Loader;
-import org.jd.core.v1.api.loader.LoaderException;
+import org.jd.core.v1.util.StringConstants;
 
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.HashMap;
-import java.util.zip.ZipEntry;
-import java.util.zip.ZipInputStream;
 
-public class ZipLoader implements Loader {
-    protected HashMap<String, byte[]> map = new HashMap<>();
+public class ZipLoader extends org.jd.core.v1.util.ZipLoader {
 
-    public  ZipLoader(InputStream is) throws LoaderException {
-        byte[] buffer = new byte[1024 * 2];
-
-        try (ZipInputStream zis = new ZipInputStream(is)) {
-            ZipEntry ze = zis.getNextEntry();
-
-            while (ze != null) {
-                if (ze.isDirectory() == false) {
-                    ByteArrayOutputStream out = new ByteArrayOutputStream();
-                    int read = zis.read(buffer);
-
-                    while (read > 0) {
-                        out.write(buffer, 0, read);
-                        read = zis.read(buffer);
-                    }
-
-                    map.put(ze.getName(), out.toByteArray());
-                }
-
-                ze = zis.getNextEntry();
-            }
-
-            zis.closeEntry();
-        } catch (IOException e) {
-            throw new LoaderException(e);
-        }
+    public ZipLoader(InputStream in) throws IOException {
+        super(in);
     }
 
-    public HashMap<String, byte[]> getMap() { return map; }
+    @Override
+    protected String makeEntryName(String entryName) {
+        return entryName;
+    }
 
     @Override
-    public byte[] load(String internalName) throws LoaderException {
-        return map.get(internalName + ".class");
+    public byte[] load(String internalName) throws IOException {
+        return getMap().get(internalName + StringConstants.CLASS_FILE_SUFFIX);
     }
 
     @Override
     public boolean canLoad(String internalName) {
-        return map.containsKey(internalName + ".class");
+        return getMap().containsKey(internalName + StringConstants.CLASS_FILE_SUFFIX);
     }
 }

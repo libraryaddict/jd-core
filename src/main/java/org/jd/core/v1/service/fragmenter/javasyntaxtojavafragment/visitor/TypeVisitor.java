@@ -4,7 +4,6 @@
  * This is a Copyleft license that gives the user the right to use,
  * copy and modify the code freely for non-commercial purposes.
  */
-
 package org.jd.core.v1.service.fragmenter.javasyntaxtojavafragment.visitor;
 
 import org.jd.core.v1.api.loader.Loader;
@@ -12,14 +11,45 @@ import org.jd.core.v1.api.printer.Printer;
 import org.jd.core.v1.model.javafragment.ImportsFragment;
 import org.jd.core.v1.model.javasyntax.AbstractJavaSyntaxVisitor;
 import org.jd.core.v1.model.javasyntax.expression.Expression;
-import org.jd.core.v1.model.javasyntax.type.*;
-import org.jd.core.v1.model.token.*;
+import org.jd.core.v1.model.javasyntax.type.BaseType;
+import org.jd.core.v1.model.javasyntax.type.BaseTypeArgument;
+import org.jd.core.v1.model.javasyntax.type.DiamondTypeArgument;
+import org.jd.core.v1.model.javasyntax.type.GenericType;
+import org.jd.core.v1.model.javasyntax.type.InnerObjectType;
+import org.jd.core.v1.model.javasyntax.type.ObjectType;
+import org.jd.core.v1.model.javasyntax.type.PrimitiveType;
+import org.jd.core.v1.model.javasyntax.type.TypeArgumentVisitable;
+import org.jd.core.v1.model.javasyntax.type.TypeArguments;
+import org.jd.core.v1.model.javasyntax.type.TypeParameter;
+import org.jd.core.v1.model.javasyntax.type.TypeParameterWithTypeBounds;
+import org.jd.core.v1.model.javasyntax.type.TypeParameters;
+import org.jd.core.v1.model.javasyntax.type.Types;
+import org.jd.core.v1.model.javasyntax.type.WildcardExtendsTypeArgument;
+import org.jd.core.v1.model.javasyntax.type.WildcardSuperTypeArgument;
+import org.jd.core.v1.model.javasyntax.type.WildcardTypeArgument;
+import org.jd.core.v1.model.token.KeywordToken;
+import org.jd.core.v1.model.token.LineNumberToken;
+import org.jd.core.v1.model.token.ReferenceToken;
+import org.jd.core.v1.model.token.TextToken;
+import org.jd.core.v1.model.token.Token;
+import org.jd.core.v1.service.converter.classfiletojavasyntax.util.TypeMaker;
 import org.jd.core.v1.util.DefaultList;
 
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 
-import static org.jd.core.v1.model.javasyntax.type.PrimitiveType.*;
+import static org.apache.bcel.Const.MAJOR_1_5;
+import static org.jd.core.v1.model.javasyntax.type.PrimitiveType.FLAG_BOOLEAN;
+import static org.jd.core.v1.model.javasyntax.type.PrimitiveType.FLAG_BYTE;
+import static org.jd.core.v1.model.javasyntax.type.PrimitiveType.FLAG_CHAR;
+import static org.jd.core.v1.model.javasyntax.type.PrimitiveType.FLAG_DOUBLE;
+import static org.jd.core.v1.model.javasyntax.type.PrimitiveType.FLAG_FLOAT;
+import static org.jd.core.v1.model.javasyntax.type.PrimitiveType.FLAG_INT;
+import static org.jd.core.v1.model.javasyntax.type.PrimitiveType.FLAG_LONG;
+import static org.jd.core.v1.model.javasyntax.type.PrimitiveType.FLAG_SHORT;
+import static org.jd.core.v1.model.javasyntax.type.PrimitiveType.FLAG_VOID;
 
 public class TypeVisitor extends AbstractJavaSyntaxVisitor {
     public static final KeywordToken BOOLEAN = new KeywordToken("boolean");
@@ -46,22 +76,23 @@ public class TypeVisitor extends AbstractJavaSyntaxVisitor {
 
     public static final int UNKNOWN_LINE_NUMBER = Printer.UNKNOWN_LINE_NUMBER;
 
-    protected Loader loader;
-    protected String internalPackageName;
-    protected boolean genericTypesSupported;
-    protected ImportsFragment importsFragment;
+    private final Loader loader;
+    protected final TypeMaker typeMaker;
+    private final String internalPackageName;
+    private final boolean genericTypesSupported;
+    protected final ImportsFragment importsFragment;
     protected Tokens tokens;
-    protected int maxLineNumber = 0;
-    protected String currentInternalTypeName;
-    protected HashMap<String, TextToken> textTokenCache = new HashMap<>();
+    private int maxLineNumber;
+    protected ObjectType currentType;
+    private final Map<String, TextToken> textTokenCache = new HashMap<>();
 
     public TypeVisitor(Loader loader, String mainInternalTypeName, int majorVersion, ImportsFragment importsFragment) {
         this.loader = loader;
-        this.genericTypesSupported = (majorVersion >= 49); // (majorVersion >= Java 5)
+        this.typeMaker = new TypeMaker(loader);
+        this.genericTypesSupported = majorVersion >= MAJOR_1_5;
         this.importsFragment = importsFragment;
-
         int index = mainInternalTypeName.lastIndexOf('/');
-        this.internalPackageName = (index == -1) ? "" : mainInternalTypeName.substring(0, index+1);
+        this.internalPackageName = index == -1 ? "" : mainInternalTypeName.substring(0, index+1);
     }
 
     @Override
@@ -78,7 +109,7 @@ public class TypeVisitor extends AbstractJavaSyntaxVisitor {
         tokens.add(EXTENDS);
         tokens.add(TextToken.SPACE);
 
-        BaseType type = argument.getType();
+        BaseType type = argument.type();
 
         type.accept(this);
     }
@@ -86,15 +117,33 @@ public class TypeVisitor extends AbstractJavaSyntaxVisitor {
     @Override
     public void visit(PrimitiveType type) {
         switch (type.getJavaPrimitiveFlags()) {
-            case FLAG_BOOLEAN: tokens.add(BOOLEAN); break;
-            case FLAG_CHAR:    tokens.add(CHAR);    break;
-            case FLAG_FLOAT:   tokens.add(FLOAT);   break;
-            case FLAG_DOUBLE:  tokens.add(DOUBLE);  break;
-            case FLAG_BYTE:    tokens.add(BYTE);    break;
-            case FLAG_SHORT:   tokens.add(SHORT);   break;
-            case FLAG_INT:     tokens.add(INT);     break;
-            case FLAG_LONG:    tokens.add(LONG);    break;
-            case FLAG_VOID:    tokens.add(VOID);    break;
+            case FLAG_BOOLEAN:
+                tokens.add(BOOLEAN);
+                break;
+            case FLAG_CHAR:
+                tokens.add(CHAR);
+                break;
+            case FLAG_FLOAT:
+                tokens.add(FLOAT);
+                break;
+            case FLAG_DOUBLE:
+                tokens.add(DOUBLE);
+                break;
+            case FLAG_BYTE:
+                tokens.add(BYTE);
+                break;
+            case FLAG_SHORT:
+                tokens.add(SHORT);
+                break;
+            case FLAG_INT:
+                tokens.add(INT);
+                break;
+            case FLAG_LONG:
+                tokens.add(LONG);
+                break;
+            case FLAG_VOID:
+                tokens.add(VOID);
+                break;
         }
 
         // Build token for dimension
@@ -104,7 +153,7 @@ public class TypeVisitor extends AbstractJavaSyntaxVisitor {
     @Override
     public void visit(ObjectType type) {
         // Build token for type reference
-        tokens.add(newTypeReferenceToken(type, currentInternalTypeName));
+        tokens.add(newTypeReferenceToken(type, currentType));
 
         if (genericTypesSupported) {
             // Build token for type arguments
@@ -121,15 +170,15 @@ public class TypeVisitor extends AbstractJavaSyntaxVisitor {
 
     @Override
     public void visit(InnerObjectType type) {
-        if ((currentInternalTypeName == null) || (!currentInternalTypeName.equals(type.getInternalName()) && !currentInternalTypeName.equals(type.getOuterType().getInternalName()))) {
-            BaseType outerType = type.getOuterType();
+        BaseType outerType = type.getOuterType();
+        if (currentType == null || !currentType.getInternalName().equals(type.getInternalName()) && outerType != null && !currentType.getInternalName().equals(outerType.getInternalName())) {
 
-            outerType.accept(this);
+            safeAccept(outerType);
             tokens.add(TextToken.DOT);
         }
 
         // Build token for type reference
-        tokens.add(new ReferenceToken(ReferenceToken.TYPE, type.getInternalName(), type.getName(), null, currentInternalTypeName));
+        tokens.add(new ReferenceToken(Printer.TYPE, type.getInternalName(), type.getName(), null, currentType));
 
         if (genericTypesSupported) {
             // Build token for type arguments
@@ -154,10 +203,17 @@ public class TypeVisitor extends AbstractJavaSyntaxVisitor {
 
     protected void visitDimension(int dimension) {
         switch (dimension) {
-            case 0: break;
-            case 1: tokens.add(TextToken.DIMENSION_1); break;
-            case 2: tokens.add(TextToken.DIMENSION_2); break;
-            default: tokens.add(newTextToken(new String(new char[dimension]).replaceAll("\0", "[]"))); break;
+            case 0:
+                break;
+            case 1:
+                tokens.add(TextToken.DIMENSION_1);
+                break;
+            case 2:
+                tokens.add(TextToken.DIMENSION_2);
+                break;
+            default:
+                tokens.add(newTextToken(new String(new char[dimension]).replace("\0", "[]")));
+                break;
         }
     }
 
@@ -167,13 +223,12 @@ public class TypeVisitor extends AbstractJavaSyntaxVisitor {
         tokens.add(SUPER);
         tokens.add(TextToken.SPACE);
 
-        BaseType type = argument.getType();
+        BaseType type = argument.type();
 
         type.accept(this);
     }
 
     @Override
-    @SuppressWarnings("unchecked")
     public void visit(Types types) {
         buildTokensForList(types, TextToken.COMMA_SPACE);
     }
@@ -202,7 +257,6 @@ public class TypeVisitor extends AbstractJavaSyntaxVisitor {
     }
 
     @Override
-    @SuppressWarnings("unchecked")
     public void visit(TypeParameters parameters) {
         int size = parameters.size();
 
@@ -240,44 +294,49 @@ public class TypeVisitor extends AbstractJavaSyntaxVisitor {
         }
     }
 
-    protected ReferenceToken newTypeReferenceToken(ObjectType ot, String ownerInternalName) {
+    protected ReferenceToken newTypeReferenceToken(ObjectType ot, ObjectType ownerType) {
         String internalName = ot.getInternalName();
         String qualifiedName = ot.getQualifiedName();
+        
+        int printerType = isInInvokeNew() ? Printer.CONSTRUCTOR : Printer.TYPE;
         String name = ot.getName();
-
         if (packageContainsType(internalPackageName, internalName)) {
             // In the current package
-            return new ReferenceToken(ReferenceToken.TYPE, internalName, name, null, ownerInternalName);
-        } else {
-            if (packageContainsType("java/lang/", internalName)) {
-                // A 'java.lang' class
-                String internalLocalTypeName = internalPackageName + name;
-
-                if (loader.canLoad(internalLocalTypeName)) {
-                    return new ReferenceToken(ReferenceToken.TYPE, internalName, qualifiedName, null, ownerInternalName);
-                } else {
-                    return new ReferenceToken(ReferenceToken.TYPE, internalName, name, null, ownerInternalName);
+            if (ownerType != null && ownerType.getInnerTypeNames() != null) {
+                String innerTypeName = ownerType.getInternalName() + '$' + name;
+                if (ownerType.getInnerTypeNames().contains(innerTypeName)) {
+                    return new QualifiedReferenceToken(printerType, internalName, qualifiedName, null, ownerType);
                 }
-            } else {
-                return new TypeReferenceToken(importsFragment, internalName, qualifiedName, name, ownerInternalName);
+                return new ReferenceToken(printerType, internalName, name, null, ownerType);
             }
+            return new ReferenceToken(printerType, internalName, name, null, ownerType);
         }
+        if (packageContainsType("java/lang/", internalName)) {
+            // A 'java.lang' class
+            String internalLocalTypeName = internalPackageName + name;
+
+            if (loader.canLoad(internalLocalTypeName)) {
+                return new ReferenceToken(printerType, internalName, qualifiedName, null, ownerType);
+            }
+            return new ReferenceToken(printerType, internalName, name, null, ownerType);
+        }
+        return new TypeReferenceToken(importsFragment, printerType, internalName, qualifiedName, name, ownerType);
+    }
+
+    protected boolean isInInvokeNew() {
+        return false;
     }
 
     protected static boolean packageContainsType(String internalPackageName, String internalClassName) {
-        if (internalClassName.startsWith(internalPackageName)) {
-            return internalClassName.indexOf('/', internalPackageName.length()) == -1;
-        } else {
-            return false;
-        }
+        return internalClassName.startsWith(internalPackageName) && internalClassName.indexOf('/', internalPackageName.length()) == -1;
     }
 
-    private static class TypeReferenceToken extends ReferenceToken {
-        protected ImportsFragment importsFragment;
-        protected String qualifiedName;
+    private static final class TypeReferenceToken extends ReferenceToken {
+        private ImportsFragment importsFragment;
+        private String qualifiedName;
 
-        public TypeReferenceToken(ImportsFragment importsFragment, String internalTypeName, String qualifiedName, String name, String ownerInternalName) {
-            super(TYPE, internalTypeName, name, null, ownerInternalName);
+        public TypeReferenceToken(ImportsFragment importsFragment, int printerType, String internalTypeName, String qualifiedName, String name, ObjectType ownerType) {
+            super(printerType, internalTypeName, name, null, ownerType);
             this.importsFragment = importsFragment;
             this.qualifiedName = qualifiedName;
         }
@@ -286,24 +345,32 @@ public class TypeVisitor extends AbstractJavaSyntaxVisitor {
         public String getName() {
             if (importsFragment.contains(internalTypeName)) {
                 return name;
-            } else {
-                return qualifiedName;
             }
+            return qualifiedName;
         }
     }
 
-    protected TextToken newTextToken(String text) {
-        TextToken textToken = textTokenCache.get(text);
-
-        if (textToken == null) {
-            textTokenCache.put(text, textToken=new TextToken(text));
+    private static final class QualifiedReferenceToken extends ReferenceToken {
+        private String qualifiedName;
+        
+        public QualifiedReferenceToken(int printerType, String internalTypeName, String qualifiedName, String name, ObjectType ownerType) {
+            super(printerType, internalTypeName, name, null, ownerType);
+            this.qualifiedName = qualifiedName;
         }
-
-        return textToken;
+        
+        @Override
+        public String getName() {
+            return qualifiedName;
+        }
+    }
+    
+    protected TextToken newTextToken(String text) {
+        return textTokenCache.computeIfAbsent(text, TextToken::new);
     }
 
     public class Tokens extends DefaultList<Token> {
-        protected int currentLineNumber = UNKNOWN_LINE_NUMBER;
+        private static final long serialVersionUID = 1L;
+        private int currentLineNumber = UNKNOWN_LINE_NUMBER;
 
         public int getCurrentLineNumber() {
             return currentLineNumber;
@@ -311,7 +378,9 @@ public class TypeVisitor extends AbstractJavaSyntaxVisitor {
 
         @Override
         public boolean add(Token token) {
-            assert !(token instanceof LineNumberToken);
+            if (token instanceof LineNumberToken) { // to convert to jdk16 pattern matching only when spotbugs #1617 and eclipse #577987 are solved
+                throw new IllegalArgumentException("token instanceof LineNumberToken");
+            }
             return super.add(token);
         }
 
@@ -320,12 +389,31 @@ public class TypeVisitor extends AbstractJavaSyntaxVisitor {
         }
 
         public void addLineNumberToken(int lineNumber) {
-            if (lineNumber != UNKNOWN_LINE_NUMBER) {
-                if (lineNumber >= maxLineNumber) {
-                    super.add(new LineNumberToken(lineNumber));
-                    maxLineNumber = currentLineNumber = lineNumber;
-                }
+            if (lineNumber != UNKNOWN_LINE_NUMBER && lineNumber >= maxLineNumber) {
+                super.add(new LineNumberToken(lineNumber));
+                maxLineNumber = currentLineNumber = lineNumber;
             }
+        }
+
+        @Override
+        public int hashCode() {
+            return 31 * super.hashCode() + Objects.hash(getEnclosingInstance(), currentLineNumber);
+        }
+
+        @Override
+        public boolean equals(Object obj) {
+            if (this == obj) {
+                return true;
+            }
+            if (!super.equals(obj) || getClass() != obj.getClass()) {
+                return false;
+            }
+            Tokens other = (Tokens) obj;
+            return getEnclosingInstance().equals(other.getEnclosingInstance()) && currentLineNumber == other.currentLineNumber;
+        }
+
+        private TypeVisitor getEnclosingInstance() {
+            return TypeVisitor.this;
         }
     }
 }

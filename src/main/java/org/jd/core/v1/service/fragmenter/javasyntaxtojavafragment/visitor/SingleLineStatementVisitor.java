@@ -4,24 +4,74 @@
  * This is a Copyleft license that gives the user the right to use,
  * copy and modify the code freely for non-commercial purposes.
  */
-
 package org.jd.core.v1.service.fragmenter.javasyntaxtojavafragment.visitor;
 
 import org.jd.core.v1.model.javasyntax.AbstractJavaSyntaxVisitor;
 import org.jd.core.v1.model.javasyntax.declaration.BodyDeclaration;
 import org.jd.core.v1.model.javasyntax.declaration.LocalVariableDeclaration;
-import org.jd.core.v1.model.javasyntax.expression.*;
-import org.jd.core.v1.model.javasyntax.statement.*;
+import org.jd.core.v1.model.javasyntax.expression.ArrayExpression;
+import org.jd.core.v1.model.javasyntax.expression.BaseExpression;
+import org.jd.core.v1.model.javasyntax.expression.BinaryOperatorExpression;
+import org.jd.core.v1.model.javasyntax.expression.BooleanExpression;
+import org.jd.core.v1.model.javasyntax.expression.CastExpression;
+import org.jd.core.v1.model.javasyntax.expression.ConstructorInvocationExpression;
+import org.jd.core.v1.model.javasyntax.expression.ConstructorReferenceExpression;
+import org.jd.core.v1.model.javasyntax.expression.DoubleConstantExpression;
+import org.jd.core.v1.model.javasyntax.expression.EnumConstantReferenceExpression;
+import org.jd.core.v1.model.javasyntax.expression.Expression;
+import org.jd.core.v1.model.javasyntax.expression.FieldReferenceExpression;
+import org.jd.core.v1.model.javasyntax.expression.FloatConstantExpression;
+import org.jd.core.v1.model.javasyntax.expression.InstanceOfExpression;
+import org.jd.core.v1.model.javasyntax.expression.IntegerConstantExpression;
+import org.jd.core.v1.model.javasyntax.expression.LambdaFormalParametersExpression;
+import org.jd.core.v1.model.javasyntax.expression.LambdaIdentifiersExpression;
+import org.jd.core.v1.model.javasyntax.expression.LengthExpression;
+import org.jd.core.v1.model.javasyntax.expression.LocalVariableReferenceExpression;
+import org.jd.core.v1.model.javasyntax.expression.LongConstantExpression;
+import org.jd.core.v1.model.javasyntax.expression.MethodInvocationExpression;
+import org.jd.core.v1.model.javasyntax.expression.MethodReferenceExpression;
+import org.jd.core.v1.model.javasyntax.expression.NewArray;
+import org.jd.core.v1.model.javasyntax.expression.NewExpression;
+import org.jd.core.v1.model.javasyntax.expression.NewInitializedArray;
+import org.jd.core.v1.model.javasyntax.expression.NullExpression;
+import org.jd.core.v1.model.javasyntax.expression.ObjectTypeReferenceExpression;
+import org.jd.core.v1.model.javasyntax.expression.ParenthesesExpression;
+import org.jd.core.v1.model.javasyntax.expression.PostOperatorExpression;
+import org.jd.core.v1.model.javasyntax.expression.PreOperatorExpression;
+import org.jd.core.v1.model.javasyntax.expression.StringConstantExpression;
+import org.jd.core.v1.model.javasyntax.expression.SuperConstructorInvocationExpression;
+import org.jd.core.v1.model.javasyntax.expression.SuperExpression;
+import org.jd.core.v1.model.javasyntax.expression.TernaryOperatorExpression;
+import org.jd.core.v1.model.javasyntax.expression.ThisExpression;
+import org.jd.core.v1.model.javasyntax.expression.TypeReferenceDotClassExpression;
+import org.jd.core.v1.model.javasyntax.statement.AssertStatement;
+import org.jd.core.v1.model.javasyntax.statement.DoWhileStatement;
+import org.jd.core.v1.model.javasyntax.statement.ExpressionStatement;
+import org.jd.core.v1.model.javasyntax.statement.ForEachStatement;
+import org.jd.core.v1.model.javasyntax.statement.ForStatement;
+import org.jd.core.v1.model.javasyntax.statement.IfElseStatement;
+import org.jd.core.v1.model.javasyntax.statement.IfStatement;
+import org.jd.core.v1.model.javasyntax.statement.LabelStatement;
+import org.jd.core.v1.model.javasyntax.statement.LambdaExpressionStatement;
+import org.jd.core.v1.model.javasyntax.statement.LocalVariableDeclarationStatement;
+import org.jd.core.v1.model.javasyntax.statement.ReturnExpressionStatement;
+import org.jd.core.v1.model.javasyntax.statement.Statement;
+import org.jd.core.v1.model.javasyntax.statement.SwitchStatement;
+import org.jd.core.v1.model.javasyntax.statement.SynchronizedStatement;
+import org.jd.core.v1.model.javasyntax.statement.ThrowStatement;
+import org.jd.core.v1.model.javasyntax.statement.TryStatement;
+import org.jd.core.v1.model.javasyntax.statement.TypeDeclarationStatement;
+import org.jd.core.v1.model.javasyntax.statement.WhileStatement;
 
 import java.util.List;
 
 public class SingleLineStatementVisitor extends AbstractJavaSyntaxVisitor {
     // Minimal line number of visited statements
-    protected int minLineNumber;
+    private int minLineNumber;
     // Maximal line number of visited statements
-    protected int maxLineNumber;
+    private int maxLineNumber;
     // Estimated number of statements if line numbers are unknown
-    protected int statementCount;
+    private int statementCount;
 
     public void init() {
         minLineNumber = -2;
@@ -33,9 +83,8 @@ public class SingleLineStatementVisitor extends AbstractJavaSyntaxVisitor {
         if (minLineNumber <= 0) {
             // Line numbers are unknown
             return statementCount <= 1;
-        } else {
-            return minLineNumber == maxLineNumber;
         }
+        return minLineNumber == maxLineNumber;
     }
 
     // -- Statement -- //
@@ -57,8 +106,10 @@ public class SingleLineStatementVisitor extends AbstractJavaSyntaxVisitor {
 
     @Override
     public void visit(ExpressionStatement statement) {
-        statement.getExpression().accept(this);
-        minLineNumber = statement.getExpression().getLineNumber();
+        safeAccept(statement.getExpression());
+        if (statement.getExpression() != null) {
+            minLineNumber = statement.getExpression().getLineNumber();
+        }
         statementCount = 1;
     }
 
@@ -86,8 +137,6 @@ public class SingleLineStatementVisitor extends AbstractJavaSyntaxVisitor {
 
         if (statement.getCondition() != null) {
             minLineNumber = statement.getCondition().getLineNumber();
-        } else if (statement.getCondition() != null) {
-            minLineNumber = statement.getCondition().getLineNumber();
         } else {
             minLineNumber = maxLineNumber;
         }
@@ -114,7 +163,7 @@ public class SingleLineStatementVisitor extends AbstractJavaSyntaxVisitor {
     @Override
     public void visit(LabelStatement statement) {
         minLineNumber = maxLineNumber = 0;
-        safeAccept(statement.getStatement());
+        safeAccept(statement.statement());
         statementCount = 1;
     }
 
@@ -131,7 +180,8 @@ public class SingleLineStatementVisitor extends AbstractJavaSyntaxVisitor {
         statementCount = 1;
     }
 
-    @Override public void visit(ReturnExpressionStatement statement) {
+    @Override
+    public void visit(ReturnExpressionStatement statement) {
         statement.getExpression().accept(this);
         minLineNumber = statement.getExpression().getLineNumber();
         statementCount = 1;
@@ -191,6 +241,7 @@ public class SingleLineStatementVisitor extends AbstractJavaSyntaxVisitor {
         statementCount = 2;
     }
 
+    @Override
     public void acceptListStatement(List<? extends Statement> list) {
         int size = list.size();
 
@@ -214,6 +265,7 @@ public class SingleLineStatementVisitor extends AbstractJavaSyntaxVisitor {
         }
     }
 
+    @Override
     public void safeAcceptListStatement(List<? extends Statement> list) {
         if (list == null) {
             minLineNumber = maxLineNumber = 0;
@@ -284,6 +336,7 @@ public class SingleLineStatementVisitor extends AbstractJavaSyntaxVisitor {
         }
     }
 
+    @Override
     public void acceptListExpression(List<? extends Expression> list) {
         int size = list.size();
 
@@ -294,33 +347,61 @@ public class SingleLineStatementVisitor extends AbstractJavaSyntaxVisitor {
         }
     }
 
-    @Override public void visit(ArrayExpression expression) { expression.getIndex().accept(this); }
-    @Override public void visit(BinaryOperatorExpression expression) { expression.getRightExpression().accept(this); }
-    @Override public void visit(CastExpression expression) { expression.getExpression().accept(this); }
-    @Override public void visit(LambdaFormalParametersExpression expression) { expression.getStatements().accept(this); }
-    @Override public void visit(LambdaIdentifiersExpression expression) { safeAccept(expression.getStatements()); }
-    @Override public void visit(NewInitializedArray expression) { expression.getArrayInitializer().accept(this); }
-    @Override public void visit(ParenthesesExpression expression) { expression.getExpression().accept(this); }
-    @Override public void visit(PostOperatorExpression expression) { expression.getExpression().accept(this); }
-    @Override public void visit(PreOperatorExpression expression) { expression.getExpression().accept(this); }
-    @Override public void visit(TernaryOperatorExpression expression) { expression.getFalseExpression().accept(this); }
+    @Override
+    public void visit(ArrayExpression expression) { expression.getIndex().accept(this); }
+    @Override
+    public void visit(BinaryOperatorExpression expression) { expression.getRightExpression().accept(this); }
+    @Override
+    public void visit(CastExpression expression) { expression.getExpression().accept(this); }
+    @Override
+    public void visit(LambdaFormalParametersExpression expression) { expression.getStatements().accept(this); }
+    @Override
+    public void visit(LambdaIdentifiersExpression expression) { safeAccept(expression.getStatements()); }
+    @Override
+    public void visit(NewInitializedArray expression) { expression.getArrayInitializer().accept(this); }
+    @Override
+    public void visit(ParenthesesExpression expression) { expression.getExpression().accept(this); }
+    @Override
+    public void visit(PostOperatorExpression expression) { expression.getExpression().accept(this); }
+    @Override
+    public void visit(PreOperatorExpression expression) { expression.getExpression().accept(this); }
+    @Override
+    public void visit(TernaryOperatorExpression expression) { expression.getFalseExpression().accept(this); }
 
-    @Override public void visit(BooleanExpression expression) { maxLineNumber = expression.getLineNumber(); }
-    @Override public void visit(ConstructorReferenceExpression expression) { maxLineNumber = expression.getLineNumber(); }
-    @Override public void visit(DoubleConstantExpression expression) { maxLineNumber = expression.getLineNumber(); }
-    @Override public void visit(EnumConstantReferenceExpression expression) { maxLineNumber = expression.getLineNumber(); }
-    @Override public void visit(FloatConstantExpression expression) { maxLineNumber = expression.getLineNumber(); }
-    @Override public void visit(IntegerConstantExpression expression) { maxLineNumber = expression.getLineNumber(); }
-    @Override public void visit(FieldReferenceExpression expression) { maxLineNumber = expression.getLineNumber(); }
-    @Override public void visit(InstanceOfExpression expression) { maxLineNumber = expression.getLineNumber(); }
-    @Override public void visit(LengthExpression expression) { maxLineNumber = expression.getLineNumber(); }
-    @Override public void visit(LocalVariableReferenceExpression expression) { maxLineNumber = expression.getLineNumber(); }
-    @Override public void visit(LongConstantExpression expression) { maxLineNumber = expression.getLineNumber(); }
-    @Override public void visit(MethodReferenceExpression expression) { maxLineNumber = expression.getLineNumber(); }
-    @Override public void visit(NullExpression expression) { maxLineNumber = expression.getLineNumber(); }
-    @Override public void visit(ObjectTypeReferenceExpression expression) { maxLineNumber = expression.getLineNumber(); }
-    @Override public void visit(StringConstantExpression expression) { maxLineNumber = expression.getLineNumber(); }
-    @Override public void visit(SuperExpression expression) { maxLineNumber = expression.getLineNumber(); }
-    @Override public void visit(ThisExpression expression) { maxLineNumber = expression.getLineNumber(); }
-    @Override public void visit(TypeReferenceDotClassExpression expression) { maxLineNumber = expression.getLineNumber(); }
+    @Override
+    public void visit(BooleanExpression expression) { maxLineNumber = expression.getLineNumber(); }
+    @Override
+    public void visit(ConstructorReferenceExpression expression) { maxLineNumber = expression.getLineNumber(); }
+    @Override
+    public void visit(DoubleConstantExpression expression) { maxLineNumber = expression.getLineNumber(); }
+    @Override
+    public void visit(EnumConstantReferenceExpression expression) { maxLineNumber = expression.getLineNumber(); }
+    @Override
+    public void visit(FloatConstantExpression expression) { maxLineNumber = expression.getLineNumber(); }
+    @Override
+    public void visit(IntegerConstantExpression expression) { maxLineNumber = expression.getLineNumber(); }
+    @Override
+    public void visit(FieldReferenceExpression expression) { maxLineNumber = expression.getLineNumber(); }
+    @Override
+    public void visit(InstanceOfExpression expression) { maxLineNumber = expression.getLineNumber(); }
+    @Override
+    public void visit(LengthExpression expression) { maxLineNumber = expression.getLineNumber(); }
+    @Override
+    public void visit(LocalVariableReferenceExpression expression) { maxLineNumber = expression.getLineNumber(); }
+    @Override
+    public void visit(LongConstantExpression expression) { maxLineNumber = expression.getLineNumber(); }
+    @Override
+    public void visit(MethodReferenceExpression expression) { maxLineNumber = expression.getLineNumber(); }
+    @Override
+    public void visit(NullExpression expression) { maxLineNumber = expression.getLineNumber(); }
+    @Override
+    public void visit(ObjectTypeReferenceExpression expression) { maxLineNumber = expression.getLineNumber(); }
+    @Override
+    public void visit(StringConstantExpression expression) { maxLineNumber = expression.getLineNumber(); }
+    @Override
+    public void visit(SuperExpression expression) { maxLineNumber = expression.getLineNumber(); }
+    @Override
+    public void visit(ThisExpression expression) { maxLineNumber = expression.getLineNumber(); }
+    @Override
+    public void visit(TypeReferenceDotClassExpression expression) { maxLineNumber = expression.getLineNumber(); }
 }

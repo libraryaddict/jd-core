@@ -4,27 +4,45 @@
  * This is a Copyleft license that gives the user the right to use,
  * copy and modify the code freely for non-commercial purposes.
  */
-
 package org.jd.core.v1.service.converter.classfiletojavasyntax.visitor;
 
 import org.jd.core.v1.model.javasyntax.expression.BooleanExpression;
-import org.jd.core.v1.model.javasyntax.statement.*;
+import org.jd.core.v1.model.javasyntax.statement.AssertStatement;
+import org.jd.core.v1.model.javasyntax.statement.BaseStatement;
+import org.jd.core.v1.model.javasyntax.statement.BreakStatement;
+import org.jd.core.v1.model.javasyntax.statement.CommentStatement;
+import org.jd.core.v1.model.javasyntax.statement.ContinueStatement;
+import org.jd.core.v1.model.javasyntax.statement.DoWhileStatement;
+import org.jd.core.v1.model.javasyntax.statement.ExpressionStatement;
+import org.jd.core.v1.model.javasyntax.statement.ForEachStatement;
+import org.jd.core.v1.model.javasyntax.statement.ForStatement;
+import org.jd.core.v1.model.javasyntax.statement.IfElseStatement;
+import org.jd.core.v1.model.javasyntax.statement.IfStatement;
+import org.jd.core.v1.model.javasyntax.statement.LabelStatement;
+import org.jd.core.v1.model.javasyntax.statement.LambdaExpressionStatement;
+import org.jd.core.v1.model.javasyntax.statement.LocalVariableDeclarationStatement;
+import org.jd.core.v1.model.javasyntax.statement.NoStatement;
+import org.jd.core.v1.model.javasyntax.statement.ReturnExpressionStatement;
+import org.jd.core.v1.model.javasyntax.statement.ReturnStatement;
+import org.jd.core.v1.model.javasyntax.statement.Statement;
+import org.jd.core.v1.model.javasyntax.statement.StatementVisitor;
+import org.jd.core.v1.model.javasyntax.statement.Statements;
+import org.jd.core.v1.model.javasyntax.statement.SwitchStatement;
+import org.jd.core.v1.model.javasyntax.statement.SynchronizedStatement;
+import org.jd.core.v1.model.javasyntax.statement.ThrowStatement;
+import org.jd.core.v1.model.javasyntax.statement.TryStatement;
+import org.jd.core.v1.model.javasyntax.statement.TypeDeclarationStatement;
+import org.jd.core.v1.model.javasyntax.statement.WhileStatement;
 import org.jd.core.v1.service.converter.classfiletojavasyntax.model.javasyntax.statement.ClassFileTryStatement;
-import org.jd.core.v1.service.converter.classfiletojavasyntax.util.LocalVariableMaker;
 import org.jd.core.v1.util.DefaultList;
 
 import java.util.List;
 
 public class RemoveFinallyStatementsVisitor implements StatementVisitor {
-    protected DeclaredSyntheticLocalVariableVisitor declaredSyntheticLocalVariableVisitor = new DeclaredSyntheticLocalVariableVisitor();
-    protected LocalVariableMaker localVariableMaker;
-    protected int statementCountInFinally;
-    protected int statementCountToRemove;
-    protected boolean lastFinallyStatementIsATryStatement;
-
-    public RemoveFinallyStatementsVisitor(LocalVariableMaker localVariableMaker) {
-        this.localVariableMaker = localVariableMaker;
-    }
+    private final DeclaredSyntheticLocalVariableVisitor declaredSyntheticLocalVariableVisitor = new DeclaredSyntheticLocalVariableVisitor();
+    private int statementCountInFinally;
+    private int statementCountToRemove;
+    private boolean lastFinallyStatementIsATryStatement;
 
     public void init() {
         this.statementCountInFinally = 0;
@@ -33,7 +51,6 @@ public class RemoveFinallyStatementsVisitor implements StatementVisitor {
     }
 
     @Override
-    @SuppressWarnings("unchecked")
     public void visit(Statements statements) {
         DefaultList<Statement> stmts = statements;
         int size = statements.size();
@@ -66,7 +83,7 @@ public class RemoveFinallyStatementsVisitor implements StatementVisitor {
 
             // Remove 'finally' statements
             if (statementCountToRemove > 0) {
-                if (!lastFinallyStatementIsATryStatement && (i > 0) && stmts.get(i-1).isTryStatement()) {
+                if (!lastFinallyStatementIsATryStatement && i > 0 && stmts.get(i-1).isTryStatement()) {
                     stmts.get(i-1).accept(this);
                     statementCountToRemove = 0;
                     i--;
@@ -106,13 +123,9 @@ public class RemoveFinallyStatementsVisitor implements StatementVisitor {
             while (i-- > 0) {
                 stmts.get(i).accept(this);
 
-                if (statementCountToRemove > 0) {
-                    if (i + statementCountToRemove < statements.size()) {
-                        statements.subList(i + 1, i + 1 + statementCountToRemove).clear();
-                        statementCountToRemove = 0;
-                    } else {
-                        //assert false : "Error. Eclipse try-finally ?";
-                    }
+                if (statementCountToRemove > 0 && i + statementCountToRemove < statements.size()) {
+                    statements.subList(i + 1, i + 1 + statementCountToRemove).clear();
+                    statementCountToRemove = 0;
                 }
             }
 
@@ -122,14 +135,10 @@ public class RemoveFinallyStatementsVisitor implements StatementVisitor {
 
     private static WhileStatement getInfiniteWhileStatement(Statement statement) {
         if (statement.isLabelStatement()) {
-            statement = ((LabelStatement)statement).getStatement();
+            statement = ((LabelStatement)statement).statement();
         }
 
-        if ((statement == null) || !statement.isWhileStatement()) {
-            return null;
-        }
-
-        if (!statement.getCondition().isBooleanExpression()) {
+        if (statement == null || !statement.isWhileStatement() || !statement.getCondition().isBooleanExpression()) {
             return null;
         }
 
@@ -164,61 +173,65 @@ public class RemoveFinallyStatementsVisitor implements StatementVisitor {
 
         if (finallyStatements != null) {
             switch (finallyStatements.size()) {
-                case 0: break;
-                case 1: finallyStatements.getFirst().accept(this); break;
-                default: for (Statement stmt : finallyStatements) stmt.accept(this); break;
+                case 0:
+                    break;
+                case 1:
+                    finallyStatements.getFirst().accept(this);
+                    break;
+                default:
+                    for (Statement stmt : finallyStatements) {
+                        stmt.accept(this);
+                    }
+                    break;
             }
 
-            if ((statementCountInFinally == 0) && (finallyStatements.size() > 0)) {
+            if (statementCountInFinally == 0 && !finallyStatements.isEmpty()) {
                 lastFinallyStatementIsATryStatement = finallyStatements.getLast().isTryStatement();
             }
         }
 
-        if (ts.isJsr() || (finallyStatements == null) || (finallyStatements.size() == 0)) {
+        if (ts.isJsr() || finallyStatements == null || finallyStatements.isEmpty()) {
             tryStatements.accept(this);
             safeAcceptListStatement(statement.getCatchClauses());
-        } else if (ts.isEclipse()) {
-            List<TryStatement.CatchClause> catchClauses = statement.getCatchClauses();
-            int oldStatementCountInFinally = statementCountInFinally;
-            int finallyStatementsSize = finallyStatements.size();
-
-            statementCountInFinally += finallyStatementsSize;
-
-            tryStatements.accept(this);
-
-            statementCountToRemove = finallyStatementsSize;
-
-            if (catchClauses != null) {
-                for (TryStatement.CatchClause cc : catchClauses) {
-                    cc.getStatements().accept(this);
-                }
-            }
-
-            statementCountInFinally = oldStatementCountInFinally;
-
-            if (statement.getResources() != null) {
-                ts.setFinallyStatements(null);
-            }
         } else {
-            List<TryStatement.CatchClause> catchClauses = statement.getCatchClauses();
-            int oldStatementCountInFinally = statementCountInFinally;
-            int oldStatementCountToRemove = statementCountToRemove;
-            int finallyStatementsSize = finallyStatements.size();
+            if (ts.isEclipse()) {
+                List<TryStatement.CatchClause> catchClauses = statement.getCatchClauses();
+                int oldStatementCountInFinally = statementCountInFinally;
+                int finallyStatementsSize = finallyStatements.size();
 
-            statementCountInFinally += finallyStatementsSize;
-            statementCountToRemove += finallyStatementsSize;
+                statementCountInFinally += finallyStatementsSize;
 
-            tryStatements.accept(this);
+                tryStatements.accept(this);
 
-            if (catchClauses != null) {
-                for (TryStatement.CatchClause cc : catchClauses) {
-                    cc.getStatements().accept(this);
+                statementCountToRemove = finallyStatementsSize;
+
+                if (catchClauses != null) {
+                    for (TryStatement.CatchClause cc : catchClauses) {
+                        cc.getStatements().accept(this);
+                    }
                 }
+
+                statementCountInFinally = oldStatementCountInFinally;
+            } else {
+                List<TryStatement.CatchClause> catchClauses = statement.getCatchClauses();
+                int oldStatementCountInFinally = statementCountInFinally;
+                int oldStatementCountToRemove = statementCountToRemove;
+                int finallyStatementsSize = finallyStatements.size();
+
+                statementCountInFinally += finallyStatementsSize;
+                statementCountToRemove += finallyStatementsSize;
+
+                tryStatements.accept(this);
+
+                if (catchClauses != null) {
+                    for (TryStatement.CatchClause cc : catchClauses) {
+                        cc.getStatements().accept(this);
+                    }
+                }
+
+                statementCountInFinally = oldStatementCountInFinally;
+                statementCountToRemove = oldStatementCountToRemove;
             }
-
-            statementCountInFinally = oldStatementCountInFinally;
-            statementCountToRemove = oldStatementCountToRemove;
-
             if (statement.getResources() != null) {
                 ts.setFinallyStatements(null);
             }
@@ -227,44 +240,70 @@ public class RemoveFinallyStatementsVisitor implements StatementVisitor {
         lastFinallyStatementIsATryStatement = oldLastFinallyStatementIsTryStatement;
     }
 
-    @Override public void visit(DoWhileStatement statement) { safeAccept(statement.getStatements()); }
-    @Override public void visit(ForEachStatement statement) { safeAccept(statement.getStatements()); }
-    @Override public void visit(ForStatement statement) { safeAccept(statement.getStatements()); }
-    @Override public void visit(IfStatement statement) { safeAccept(statement.getStatements()); }
-    @Override public void visit(SynchronizedStatement statement) { safeAccept(statement.getStatements()); }
-    @Override public void visit(TryStatement.CatchClause statement) { safeAccept(statement.getStatements()); }
-    @Override public void visit(WhileStatement statement) { safeAccept(statement.getStatements()); }
+    @Override
+    public void visit(DoWhileStatement statement) { safeAccept(statement.getStatements()); }
+    @Override
+    public void visit(ForEachStatement statement) { safeAccept(statement.getStatements()); }
+    @Override
+    public void visit(ForStatement statement) { safeAccept(statement.getStatements()); }
+    @Override
+    public void visit(IfStatement statement) { safeAccept(statement.getStatements()); }
+    @Override
+    public void visit(SynchronizedStatement statement) { safeAccept(statement.getStatements()); }
+    @Override
+    public void visit(TryStatement.CatchClause statement) { safeAccept(statement.getStatements()); }
+    @Override
+    public void visit(WhileStatement statement) { safeAccept(statement.getStatements()); }
 
-    @Override public void visit(SwitchStatement.LabelBlock statement) { statement.getStatements().accept(this); }
-    @Override public void visit(SwitchStatement.MultiLabelsBlock statement) { statement.getStatements().accept(this); }
+    @Override
+    public void visit(SwitchStatement.LabelBlock statement) { statement.getStatements().accept(this); }
+    @Override
+    public void visit(SwitchStatement.MultiLabelsBlock statement) { statement.getStatements().accept(this); }
 
-    @Override public void visit(AssertStatement statement) {}
-    @Override public void visit(BreakStatement statement) {}
-    @Override public void visit(ByteCodeStatement statement) {}
-    @Override public void visit(CommentStatement statement) {}
-    @Override public void visit(ContinueStatement statement) {}
-    @Override public void visit(ExpressionStatement statement) {}
-    @Override public void visit(LabelStatement statement) {}
-    @Override public void visit(LambdaExpressionStatement statement) {}
-    @Override public void visit(LocalVariableDeclarationStatement statement) {}
-    @Override public void visit(NoStatement statement) {}
-    @Override public void visit(ReturnExpressionStatement statement) {}
-    @Override public void visit(ReturnStatement statement) {}
-    @Override public void visit(SwitchStatement.DefaultLabel statement) {}
-    @Override public void visit(SwitchStatement.ExpressionLabel statement) {}
-    @Override public void visit(ThrowStatement statement) {}
-    @Override public void visit(TryStatement.Resource statement) {}
-    @Override public void visit(TypeDeclarationStatement statement) {}
+    @Override
+    public void visit(AssertStatement statement) {}
+    @Override
+    public void visit(BreakStatement statement) {}
+    @Override
+    public void visit(CommentStatement statement) {}
+    @Override
+    public void visit(ContinueStatement statement) {}
+    @Override
+    public void visit(ExpressionStatement statement) {}
+    @Override
+    public void visit(LabelStatement statement) {}
+    @Override
+    public void visit(LambdaExpressionStatement statement) {}
+    @Override
+    public void visit(LocalVariableDeclarationStatement statement) {}
+    @Override
+    public void visit(NoStatement statement) {}
+    @Override
+    public void visit(ReturnExpressionStatement statement) {}
+    @Override
+    public void visit(ReturnStatement statement) {}
+    @Override
+    public void visit(SwitchStatement.DefaultLabel statement) {}
+    @Override
+    public void visit(SwitchStatement.ExpressionLabel statement) {}
+    @Override
+    public void visit(ThrowStatement statement) {}
+    @Override
+    public void visit(TryStatement.Resource statement) {}
+    @Override
+    public void visit(TypeDeclarationStatement statement) {}
 
     protected void safeAccept(BaseStatement list) {
-        if (list != null)
+        if (list != null) {
             list.accept(this);
+        }
     }
 
     protected void safeAcceptListStatement(List<? extends Statement> list) {
         if (list != null) {
-            for (Statement statement : list)
+            for (Statement statement : list) {
                 statement.accept(this);
+            }
         }
     }
 }

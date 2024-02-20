@@ -7,18 +7,9 @@
 
 package org.jd.core.v1.model.token;
 
-public class BooleanConstantToken implements Token {
+public record BooleanConstantToken(boolean value) implements Token {
 
-    protected boolean value;
-
-    public BooleanConstantToken(boolean value) {
-        this.value = value;
-    }
-
-    public boolean getValue() {
-        return value;
-    }
-
+    @Override
     public String toString() {
         return "BooleanConstantToken{'" + value + "'}";
     }

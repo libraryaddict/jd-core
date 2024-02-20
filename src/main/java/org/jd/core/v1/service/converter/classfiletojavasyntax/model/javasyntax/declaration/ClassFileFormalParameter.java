@@ -13,14 +13,8 @@ import org.jd.core.v1.model.javasyntax.type.Type;
 import org.jd.core.v1.service.converter.classfiletojavasyntax.model.localvariable.AbstractLocalVariable;
 import org.jd.core.v1.service.converter.classfiletojavasyntax.model.localvariable.LocalVariableReference;
 
-
 public class ClassFileFormalParameter extends FormalParameter implements LocalVariableReference {
-    protected AbstractLocalVariable localVariable;
-
-    public ClassFileFormalParameter(AbstractLocalVariable localVariable) {
-        super(null, null);
-        this.localVariable = localVariable;
-    }
+    private AbstractLocalVariable localVariable;
 
     public ClassFileFormalParameter(AbstractLocalVariable localVariable, boolean varargs) {
         super(null, varargs, null);
@@ -32,14 +26,17 @@ public class ClassFileFormalParameter extends FormalParameter implements LocalVa
         this.localVariable = localVariable;
     }
 
+    @Override
     public Type getType() {
         return localVariable.getType();
     }
 
+    @Override
     public String getName() {
         return localVariable.getName();
     }
 
+    @Override
     public void setName(String name) {
         localVariable.setName(name);
     }
@@ -56,18 +53,20 @@ public class ClassFileFormalParameter extends FormalParameter implements LocalVa
 
     @Override
     public String toString() {
-        String s = "ClassFileFormalParameter{";
+        StringBuilder s = new StringBuilder("ClassFileFormalParameter{");
 
-        if (annotationReferences != null)
-            s += annotationReferences + " ";
+        if (annotationReferences != null) {
+            s.append(annotationReferences).append(" ");
+        }
 
         Type type = localVariable.getType();
 
-        if (varargs)
-            s += type.createType(type.getDimension()-1) + "... ";
-        else
-            s += type + " ";
+        if (varargs) {
+            s.append(type.createType(type.getDimension()-1)).append("... ");
+        } else {
+            s.append(type).append(" ");
+        }
 
-        return s + localVariable.getName() + "}";
+        return s.append(localVariable.getName()).append("}").toString();
     }
 }

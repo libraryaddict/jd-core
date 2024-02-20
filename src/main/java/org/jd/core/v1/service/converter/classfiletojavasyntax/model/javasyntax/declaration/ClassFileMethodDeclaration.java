@@ -7,12 +7,12 @@
 
 package org.jd.core.v1.service.converter.classfiletojavasyntax.model.javasyntax.declaration;
 
+import org.apache.bcel.classfile.Method;
 import org.jd.core.v1.model.classfile.ClassFile;
-import org.jd.core.v1.model.classfile.Method;
 import org.jd.core.v1.model.javasyntax.declaration.BaseFormalParameter;
 import org.jd.core.v1.model.javasyntax.declaration.MethodDeclaration;
 import org.jd.core.v1.model.javasyntax.reference.BaseAnnotationReference;
-import org.jd.core.v1.model.javasyntax.reference.ElementValue;
+import org.jd.core.v1.model.javasyntax.reference.BaseElementValue;
 import org.jd.core.v1.model.javasyntax.statement.BaseStatement;
 import org.jd.core.v1.model.javasyntax.type.BaseType;
 import org.jd.core.v1.model.javasyntax.type.BaseTypeParameter;
@@ -22,32 +22,19 @@ import org.jd.core.v1.model.javasyntax.type.TypeArgument;
 import java.util.Map;
 
 public class ClassFileMethodDeclaration extends MethodDeclaration implements ClassFileConstructorOrMethodDeclaration {
-    protected ClassFileBodyDeclaration bodyDeclaration;
-    protected ClassFile classFile;
-    protected Method method;
-    protected BaseType parameterTypes;
-    protected Map<String, TypeArgument> bindings;
-    protected Map<String, BaseType> typeBounds;
-    protected int firstLineNumber;
-
-    public ClassFileMethodDeclaration(
-            ClassFileBodyDeclaration bodyDeclaration, ClassFile classFile, Method method, String name,
-            Type returnedType, BaseType parameterTypes, Map<String, TypeArgument> bindings,
-            Map<String, BaseType> typeBounds) {
-        super(null, method.getAccessFlags(), name, null, returnedType, null, null, method.getDescriptor(), null, null);
-        this.bodyDeclaration = bodyDeclaration;
-        this.classFile = classFile;
-        this.parameterTypes = parameterTypes;
-        this.method = method;
-        this.bindings = bindings;
-        this.typeBounds = typeBounds;
-    }
+    private final ClassFileBodyDeclaration bodyDeclaration;
+    private final ClassFile classFile;
+    private final Method method;
+    private final BaseType parameterTypes;
+    private final Map<String, TypeArgument> bindings;
+    private final Map<String, BaseType> typeBounds;
+    private final int firstLineNumber;
 
     public ClassFileMethodDeclaration(
             ClassFileBodyDeclaration bodyDeclaration, ClassFile classFile, Method method, String name,
             Type returnedType, BaseType parameterTypes, Map<String, TypeArgument> bindings,
             Map<String, BaseType> typeBounds, int firstLineNumber) {
-        super(null, method.getAccessFlags(), name, null, returnedType, null, null, method.getDescriptor(), null, null);
+        super(null, method.getAccessFlags(), name, null, returnedType, null, null, method.getSignature(), null, null);
         this.bodyDeclaration = bodyDeclaration;
         this.classFile = classFile;
         this.method = method;
@@ -60,9 +47,9 @@ public class ClassFileMethodDeclaration extends MethodDeclaration implements Cla
     public ClassFileMethodDeclaration(
             ClassFileBodyDeclaration bodyDeclaration, ClassFile classFile, Method method, BaseAnnotationReference annotationReferences,
             String name, BaseTypeParameter typeParameters, Type returnedType, BaseType parameterTypes, BaseType exceptionTypes,
-            ElementValue defaultAnnotationValue, Map<String, TypeArgument> bindings,
+            BaseElementValue defaultAnnotationValue, Map<String, TypeArgument> bindings,
             Map<String, BaseType> typeBounds, int firstLineNumber) {
-        super(annotationReferences, method.getAccessFlags(), name, typeParameters, returnedType, null, exceptionTypes, method.getDescriptor(), null, defaultAnnotationValue);
+        super(annotationReferences, method.getAccessFlags(), name, typeParameters, returnedType, null, exceptionTypes, method.getSignature(), null, defaultAnnotationValue);
         this.bodyDeclaration = bodyDeclaration;
         this.classFile = classFile;
         this.method = method;

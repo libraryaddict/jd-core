@@ -7,18 +7,122 @@
 
 package org.jd.core.v1.model.javasyntax;
 
-import org.jd.core.v1.model.javasyntax.declaration.*;
-import org.jd.core.v1.model.javasyntax.expression.*;
-import org.jd.core.v1.model.javasyntax.reference.*;
-import org.jd.core.v1.model.javasyntax.statement.*;
-import org.jd.core.v1.model.javasyntax.type.*;
+import org.jd.core.v1.model.javasyntax.declaration.AnnotationDeclaration;
+import org.jd.core.v1.model.javasyntax.declaration.ArrayVariableInitializer;
+import org.jd.core.v1.model.javasyntax.declaration.BodyDeclaration;
+import org.jd.core.v1.model.javasyntax.declaration.ClassDeclaration;
+import org.jd.core.v1.model.javasyntax.declaration.ConstructorDeclaration;
+import org.jd.core.v1.model.javasyntax.declaration.Declaration;
+import org.jd.core.v1.model.javasyntax.declaration.DeclarationVisitor;
+import org.jd.core.v1.model.javasyntax.declaration.EnumDeclaration;
+import org.jd.core.v1.model.javasyntax.declaration.ExpressionVariableInitializer;
+import org.jd.core.v1.model.javasyntax.declaration.FieldDeclaration;
+import org.jd.core.v1.model.javasyntax.declaration.FieldDeclarator;
+import org.jd.core.v1.model.javasyntax.declaration.FieldDeclarators;
+import org.jd.core.v1.model.javasyntax.declaration.FormalParameter;
+import org.jd.core.v1.model.javasyntax.declaration.FormalParameters;
+import org.jd.core.v1.model.javasyntax.declaration.InterfaceDeclaration;
+import org.jd.core.v1.model.javasyntax.declaration.LocalVariableDeclaration;
+import org.jd.core.v1.model.javasyntax.declaration.LocalVariableDeclarator;
+import org.jd.core.v1.model.javasyntax.declaration.LocalVariableDeclarators;
+import org.jd.core.v1.model.javasyntax.declaration.MemberDeclarations;
+import org.jd.core.v1.model.javasyntax.declaration.MethodDeclaration;
+import org.jd.core.v1.model.javasyntax.declaration.ModuleDeclaration;
+import org.jd.core.v1.model.javasyntax.declaration.StaticInitializerDeclaration;
+import org.jd.core.v1.model.javasyntax.declaration.TypeDeclaration;
+import org.jd.core.v1.model.javasyntax.declaration.TypeDeclarations;
+import org.jd.core.v1.model.javasyntax.expression.ArrayExpression;
+import org.jd.core.v1.model.javasyntax.expression.BaseExpression;
+import org.jd.core.v1.model.javasyntax.expression.BinaryOperatorExpression;
+import org.jd.core.v1.model.javasyntax.expression.BooleanExpression;
+import org.jd.core.v1.model.javasyntax.expression.CastExpression;
+import org.jd.core.v1.model.javasyntax.expression.CommentExpression;
+import org.jd.core.v1.model.javasyntax.expression.ConstructorInvocationExpression;
+import org.jd.core.v1.model.javasyntax.expression.ConstructorReferenceExpression;
+import org.jd.core.v1.model.javasyntax.expression.DoubleConstantExpression;
+import org.jd.core.v1.model.javasyntax.expression.EnumConstantReferenceExpression;
+import org.jd.core.v1.model.javasyntax.expression.Expression;
+import org.jd.core.v1.model.javasyntax.expression.ExpressionVisitor;
+import org.jd.core.v1.model.javasyntax.expression.Expressions;
+import org.jd.core.v1.model.javasyntax.expression.FieldReferenceExpression;
+import org.jd.core.v1.model.javasyntax.expression.FloatConstantExpression;
+import org.jd.core.v1.model.javasyntax.expression.InstanceOfExpression;
+import org.jd.core.v1.model.javasyntax.expression.IntegerConstantExpression;
+import org.jd.core.v1.model.javasyntax.expression.LambdaFormalParametersExpression;
+import org.jd.core.v1.model.javasyntax.expression.LambdaIdentifiersExpression;
+import org.jd.core.v1.model.javasyntax.expression.LengthExpression;
+import org.jd.core.v1.model.javasyntax.expression.LocalVariableReferenceExpression;
+import org.jd.core.v1.model.javasyntax.expression.LongConstantExpression;
+import org.jd.core.v1.model.javasyntax.expression.MethodInvocationExpression;
+import org.jd.core.v1.model.javasyntax.expression.MethodReferenceExpression;
+import org.jd.core.v1.model.javasyntax.expression.NewArray;
+import org.jd.core.v1.model.javasyntax.expression.NewExpression;
+import org.jd.core.v1.model.javasyntax.expression.NewInitializedArray;
+import org.jd.core.v1.model.javasyntax.expression.NoExpression;
+import org.jd.core.v1.model.javasyntax.expression.NullExpression;
+import org.jd.core.v1.model.javasyntax.expression.ObjectTypeReferenceExpression;
+import org.jd.core.v1.model.javasyntax.expression.ParenthesesExpression;
+import org.jd.core.v1.model.javasyntax.expression.PostOperatorExpression;
+import org.jd.core.v1.model.javasyntax.expression.PreOperatorExpression;
+import org.jd.core.v1.model.javasyntax.expression.QualifiedSuperExpression;
+import org.jd.core.v1.model.javasyntax.expression.StringConstantExpression;
+import org.jd.core.v1.model.javasyntax.expression.SuperConstructorInvocationExpression;
+import org.jd.core.v1.model.javasyntax.expression.SuperExpression;
+import org.jd.core.v1.model.javasyntax.expression.TernaryOperatorExpression;
+import org.jd.core.v1.model.javasyntax.expression.ThisExpression;
+import org.jd.core.v1.model.javasyntax.expression.TypeReferenceDotClassExpression;
+import org.jd.core.v1.model.javasyntax.reference.AnnotationElementValue;
+import org.jd.core.v1.model.javasyntax.reference.AnnotationReference;
+import org.jd.core.v1.model.javasyntax.reference.AnnotationReferences;
+import org.jd.core.v1.model.javasyntax.reference.ElementValueArrayInitializerElementValue;
+import org.jd.core.v1.model.javasyntax.reference.ElementValuePair;
+import org.jd.core.v1.model.javasyntax.reference.ElementValuePairs;
+import org.jd.core.v1.model.javasyntax.reference.ElementValues;
+import org.jd.core.v1.model.javasyntax.reference.ExpressionElementValue;
+import org.jd.core.v1.model.javasyntax.reference.Reference;
+import org.jd.core.v1.model.javasyntax.reference.ReferenceVisitor;
+import org.jd.core.v1.model.javasyntax.statement.AssertStatement;
+import org.jd.core.v1.model.javasyntax.statement.BaseStatement;
+import org.jd.core.v1.model.javasyntax.statement.BreakStatement;
+import org.jd.core.v1.model.javasyntax.statement.CommentStatement;
+import org.jd.core.v1.model.javasyntax.statement.ContinueStatement;
+import org.jd.core.v1.model.javasyntax.statement.DoWhileStatement;
+import org.jd.core.v1.model.javasyntax.statement.ExpressionStatement;
+import org.jd.core.v1.model.javasyntax.statement.ForEachStatement;
+import org.jd.core.v1.model.javasyntax.statement.ForStatement;
+import org.jd.core.v1.model.javasyntax.statement.IfElseStatement;
+import org.jd.core.v1.model.javasyntax.statement.IfStatement;
+import org.jd.core.v1.model.javasyntax.statement.LabelStatement;
+import org.jd.core.v1.model.javasyntax.statement.LambdaExpressionStatement;
+import org.jd.core.v1.model.javasyntax.statement.LocalVariableDeclarationStatement;
+import org.jd.core.v1.model.javasyntax.statement.NoStatement;
+import org.jd.core.v1.model.javasyntax.statement.ReturnExpressionStatement;
+import org.jd.core.v1.model.javasyntax.statement.ReturnStatement;
+import org.jd.core.v1.model.javasyntax.statement.Statement;
+import org.jd.core.v1.model.javasyntax.statement.StatementVisitor;
+import org.jd.core.v1.model.javasyntax.statement.Statements;
+import org.jd.core.v1.model.javasyntax.statement.SwitchStatement;
+import org.jd.core.v1.model.javasyntax.statement.SynchronizedStatement;
+import org.jd.core.v1.model.javasyntax.statement.ThrowStatement;
+import org.jd.core.v1.model.javasyntax.statement.TryStatement;
+import org.jd.core.v1.model.javasyntax.statement.TypeDeclarationStatement;
+import org.jd.core.v1.model.javasyntax.statement.WhileStatement;
+import org.jd.core.v1.model.javasyntax.type.AbstractTypeArgumentVisitor;
+import org.jd.core.v1.model.javasyntax.type.BaseType;
+import org.jd.core.v1.model.javasyntax.type.BaseTypeParameter;
+import org.jd.core.v1.model.javasyntax.type.TypeParameter;
+import org.jd.core.v1.model.javasyntax.type.TypeParameterVisitor;
+import org.jd.core.v1.model.javasyntax.type.TypeParameterWithTypeBounds;
+import org.jd.core.v1.model.javasyntax.type.TypeParameters;
+import org.jd.core.v1.model.javasyntax.type.TypeVisitor;
+import org.jd.core.v1.model.javasyntax.type.Types;
 
-import java.util.Iterator;
 import java.util.List;
 
 public abstract class AbstractJavaSyntaxVisitor extends AbstractTypeArgumentVisitor implements DeclarationVisitor, ExpressionVisitor, ReferenceVisitor, StatementVisitor, TypeVisitor, TypeParameterVisitor {
+
     public void visit(CompilationUnit compilationUnit) {
-        compilationUnit.getTypeDeclarations().accept(this);
+        compilationUnit.typeDeclarations().accept(this);
     }
 
     @Override
@@ -41,25 +145,24 @@ public abstract class AbstractJavaSyntaxVisitor extends AbstractTypeArgumentVisi
     @Override
     public void visit(ClassDeclaration declaration) {
         BaseType superType = declaration.getSuperType();
-
         if (superType != null) {
             superType.accept(this);
         }
-
         safeAccept(declaration.getTypeParameters());
         safeAccept(declaration.getInterfaces());
         safeAccept(declaration.getAnnotationReferences());
         safeAccept(declaration.getBodyDeclaration());
     }
 
-    @Override public void visit(CommentStatement statement) {}
+    @Override
+    public void visit(CommentStatement statement) {}
 
-    @Override public void visit(CommentExpression expression) {}
+    @Override
+    public void visit(CommentExpression expression) {}
 
     @Override
     public void visit(ConstructorInvocationExpression expression) {
         BaseType type = expression.getType();
-
         type.accept(this);
         safeAccept(expression.getParameters());
     }
@@ -82,13 +185,11 @@ public abstract class AbstractJavaSyntaxVisitor extends AbstractTypeArgumentVisi
 
     @Override
     public void visit(EnumDeclaration.Constant declaration) {
-        safeAccept(declaration.getAnnotationReferences());
         safeAccept(declaration.getArguments());
         safeAccept(declaration.getBodyDeclaration());
     }
 
     @Override
-    @SuppressWarnings("unchecked")
     public void visit(Expressions list) {
         acceptListExpression(list);
     }
@@ -101,7 +202,6 @@ public abstract class AbstractJavaSyntaxVisitor extends AbstractTypeArgumentVisi
     @Override
     public void visit(FieldDeclaration declaration) {
         BaseType type = declaration.getType();
-
         type.accept(this);
         safeAccept(declaration.getAnnotationReferences());
         declaration.getFieldDeclarators().accept(this);
@@ -113,28 +213,20 @@ public abstract class AbstractJavaSyntaxVisitor extends AbstractTypeArgumentVisi
     }
 
     @Override
-    @SuppressWarnings("unchecked")
     public void visit(FieldDeclarators list) {
-        acceptListDeclaration((List<? extends Declaration>)list);
+        acceptListDeclaration(list);
     }
 
     @Override
     public void visit(FormalParameter declaration) {
         BaseType type = declaration.getType();
-
         type.accept(this);
         safeAccept(declaration.getAnnotationReferences());
     }
 
     @Override
-    @SuppressWarnings("unchecked")
     public void visit(FormalParameters list) {
         acceptListDeclaration(list);
-    }
-
-    @Override
-    public void visit(InstanceInitializerDeclaration declaration) {
-        safeAccept(declaration.getStatements());
     }
 
     @Override
@@ -147,7 +239,6 @@ public abstract class AbstractJavaSyntaxVisitor extends AbstractTypeArgumentVisi
     @Override
     public void visit(LocalVariableDeclaration declaration) {
         BaseType type = declaration.getType();
-
         type.accept(this);
         declaration.getLocalVariableDeclarators().accept(this);
     }
@@ -158,7 +249,6 @@ public abstract class AbstractJavaSyntaxVisitor extends AbstractTypeArgumentVisi
     }
 
     @Override
-    @SuppressWarnings("unchecked")
     public void visit(LocalVariableDeclarators declarators) {
         acceptListDeclaration(declarators);
     }
@@ -166,7 +256,6 @@ public abstract class AbstractJavaSyntaxVisitor extends AbstractTypeArgumentVisi
     @Override
     public void visit(MethodDeclaration declaration) {
         BaseType returnedType = declaration.getReturnedType();
-
         returnedType.accept(this);
         safeAccept(declaration.getAnnotationReferences());
         safeAccept(declaration.getFormalParameters());
@@ -175,7 +264,6 @@ public abstract class AbstractJavaSyntaxVisitor extends AbstractTypeArgumentVisi
     }
 
     @Override
-    @SuppressWarnings("unchecked")
     public void visit(MemberDeclarations declarations) {
         acceptListDeclaration(declarations);
     }
@@ -184,7 +272,6 @@ public abstract class AbstractJavaSyntaxVisitor extends AbstractTypeArgumentVisi
     public void visit(ModuleDeclaration declarations) {}
 
     @Override
-    @SuppressWarnings("unchecked")
     public void visit(TypeDeclarations list) {
         acceptListDeclaration(list);
     }
@@ -192,7 +279,6 @@ public abstract class AbstractJavaSyntaxVisitor extends AbstractTypeArgumentVisi
     @Override
     public void visit(ArrayExpression expression) {
         BaseType type = expression.getType();
-
         type.accept(this);
         expression.getExpression().accept(this);
         expression.getIndex().accept(this);
@@ -210,7 +296,6 @@ public abstract class AbstractJavaSyntaxVisitor extends AbstractTypeArgumentVisi
     @Override
     public void visit(CastExpression expression) {
         BaseType type = expression.getType();
-
         type.accept(this);
         expression.getExpression().accept(this);
     }
@@ -218,28 +303,24 @@ public abstract class AbstractJavaSyntaxVisitor extends AbstractTypeArgumentVisi
     @Override
     public void visit(ConstructorReferenceExpression expression) {
         BaseType type = expression.getType();
-
         type.accept(this);
     }
 
     @Override
     public void visit(DoubleConstantExpression expression) {
         BaseType type = expression.getType();
-
         type.accept(this);
     }
 
     @Override
     public void visit(EnumConstantReferenceExpression expression) {
         BaseType type = expression.getType();
-
         type.accept(this);
     }
 
     @Override
     public void visit(FieldReferenceExpression expression) {
         BaseType type = expression.getType();
-
         type.accept(this);
         safeAccept(expression.getExpression());
     }
@@ -247,21 +328,18 @@ public abstract class AbstractJavaSyntaxVisitor extends AbstractTypeArgumentVisi
     @Override
     public void visit(FloatConstantExpression expression) {
         BaseType type = expression.getType();
-
         type.accept(this);
     }
 
     @Override
     public void visit(IntegerConstantExpression expression) {
         BaseType type = expression.getType();
-
         type.accept(this);
     }
 
     @Override
     public void visit(InstanceOfExpression expression) {
         BaseType type = expression.getType();
-
         type.accept(this);
         expression.getExpression().accept(this);
     }
@@ -277,21 +355,20 @@ public abstract class AbstractJavaSyntaxVisitor extends AbstractTypeArgumentVisi
         safeAccept(expression.getStatements());
     }
 
-    @Override public void visit(LengthExpression expression) {
+    @Override
+    public void visit(LengthExpression expression) {
         expression.getExpression().accept(this);
     }
 
     @Override
     public void visit(LocalVariableReferenceExpression expression) {
         BaseType type = expression.getType();
-
         type.accept(this);
     }
 
     @Override
     public void visit(LongConstantExpression expression) {
         BaseType type = expression.getType();
-
         type.accept(this);
     }
 
@@ -310,7 +387,6 @@ public abstract class AbstractJavaSyntaxVisitor extends AbstractTypeArgumentVisi
     @Override
     public void visit(NewArray expression) {
         BaseType type = expression.getType();
-
         type.accept(this);
         safeAccept(expression.getDimensionExpressionList());
     }
@@ -318,7 +394,6 @@ public abstract class AbstractJavaSyntaxVisitor extends AbstractTypeArgumentVisi
     @Override
     public void visit(NewExpression expression) {
         BaseType type = expression.getType();
-
         type.accept(this);
         safeAccept(expression.getParameters());
         // safeAccept(expression.getBodyDeclaration());
@@ -327,7 +402,6 @@ public abstract class AbstractJavaSyntaxVisitor extends AbstractTypeArgumentVisi
     @Override
     public void visit(NewInitializedArray expression) {
         BaseType type = expression.getType();
-
         type.accept(this);
         safeAccept(expression.getArrayInitializer());
     }
@@ -338,21 +412,18 @@ public abstract class AbstractJavaSyntaxVisitor extends AbstractTypeArgumentVisi
     @Override
     public void visit(NullExpression expression) {
         BaseType type = expression.getType();
-
         type.accept(this);
     }
 
     @Override
     public void visit(TypeReferenceDotClassExpression expression) {
         BaseType type = expression.getType();
-
         type.accept(this);
     }
 
     @Override
     public void visit(ObjectTypeReferenceExpression expression) {
         BaseType type = expression.getType();
-
         type.accept(this);
     }
 
@@ -377,7 +448,6 @@ public abstract class AbstractJavaSyntaxVisitor extends AbstractTypeArgumentVisi
     @Override
     public void visit(SuperConstructorInvocationExpression expression) {
         BaseType type = expression.getType();
-
         type.accept(this);
         safeAccept(expression.getParameters());
     }
@@ -385,10 +455,15 @@ public abstract class AbstractJavaSyntaxVisitor extends AbstractTypeArgumentVisi
     @Override
     public void visit(SuperExpression expression) {
         BaseType type = expression.getType();
-
         type.accept(this);
     }
 
+    @Override
+    public void visit(QualifiedSuperExpression expression) {
+        BaseType type = expression.getType();
+        type.accept(this);
+    }
+    
     @Override
     public void visit(TernaryOperatorExpression expression) {
         expression.getCondition().accept(this);
@@ -399,7 +474,6 @@ public abstract class AbstractJavaSyntaxVisitor extends AbstractTypeArgumentVisi
     @Override
     public void visit(ThisExpression expression) {
         BaseType type = expression.getType();
-
         type.accept(this);
     }
 
@@ -410,8 +484,7 @@ public abstract class AbstractJavaSyntaxVisitor extends AbstractTypeArgumentVisi
     }
 
     @Override
-    @SuppressWarnings("unchecked")
-    public void visit(AnnotationReferences list) {
+    public void visit(AnnotationReferences<? extends AnnotationReference> list) {
         acceptListReference(list);
     }
 
@@ -432,29 +505,18 @@ public abstract class AbstractJavaSyntaxVisitor extends AbstractTypeArgumentVisi
     }
 
     @Override
-    @SuppressWarnings("unchecked")
     public void visit(ElementValues list) {
         acceptListReference(list);
     }
 
     @Override
     public void visit(ElementValuePair reference) {
-        reference.getElementValue().accept(this);
+        reference.elementValue().accept(this);
     }
 
     @Override
-    @SuppressWarnings("unchecked")
     public void visit(ElementValuePairs list) {
         acceptListReference(list);
-    }
-
-    @Override
-    public void visit(ObjectReference reference) {
-        visit((ObjectType) reference);
-    }
-
-    @Override public void visit(InnerObjectReference reference) {
-        visit((InnerObjectType) reference);
     }
 
     @Override
@@ -466,7 +528,6 @@ public abstract class AbstractJavaSyntaxVisitor extends AbstractTypeArgumentVisi
     @Override
     public void visit(BreakStatement statement) {}
 
-    @Override public void visit(ByteCodeStatement statement) {}
 
     @Override
     public void visit(ContinueStatement statement) {}
@@ -479,7 +540,7 @@ public abstract class AbstractJavaSyntaxVisitor extends AbstractTypeArgumentVisi
 
     @Override
     public void visit(ExpressionStatement statement) {
-        statement.getExpression().accept(this);
+        safeAccept(statement.getExpression());
     }
 
     @Override
@@ -515,7 +576,7 @@ public abstract class AbstractJavaSyntaxVisitor extends AbstractTypeArgumentVisi
 
     @Override
     public void visit(LabelStatement statement) {
-        safeAccept(statement.getStatement());
+        safeAccept(statement.statement());
     }
 
     @Override
@@ -531,7 +592,8 @@ public abstract class AbstractJavaSyntaxVisitor extends AbstractTypeArgumentVisi
     @Override
     public void visit(NoStatement statement) {}
 
-    @Override public void visit(ReturnExpressionStatement statement) {
+    @Override
+    public void visit(ReturnExpressionStatement statement) {
         statement.getExpression().accept(this);
     }
 
@@ -539,7 +601,6 @@ public abstract class AbstractJavaSyntaxVisitor extends AbstractTypeArgumentVisi
     public void visit(ReturnStatement statement) {}
 
     @Override
-    @SuppressWarnings("unchecked")
     public void visit(Statements list) {
         acceptListStatement(list);
     }
@@ -592,7 +653,6 @@ public abstract class AbstractJavaSyntaxVisitor extends AbstractTypeArgumentVisi
     @Override
     public void visit(TryStatement.CatchClause statement) {
         BaseType type = statement.getType();
-
         type.accept(this);
         safeAccept(statement.getStatements());
     }
@@ -600,7 +660,6 @@ public abstract class AbstractJavaSyntaxVisitor extends AbstractTypeArgumentVisi
     @Override
     public void visit(TryStatement.Resource statement) {
         BaseType type = statement.getType();
-
         type.accept(this);
         statement.getExpression().accept(this);
     }
@@ -612,7 +671,7 @@ public abstract class AbstractJavaSyntaxVisitor extends AbstractTypeArgumentVisi
 
     @Override
     public void visit(TypeDeclarationStatement statement) {
-        statement.getTypeDeclaration().accept(this);
+        statement.typeDeclaration().accept(this);
     }
 
     @Override
@@ -631,10 +690,9 @@ public abstract class AbstractJavaSyntaxVisitor extends AbstractTypeArgumentVisi
 
     @Override
     public void visit(TypeParameters parameters) {
-        Iterator<TypeParameter> iterator = parameters.iterator();
-
-        while (iterator.hasNext())
-            iterator.next().accept(this);
+        for (TypeParameter typeParameter : parameters) {
+            typeParameter.accept(this);
+        }
     }
 
     public void visit(TypeDeclaration declaration) {
@@ -642,78 +700,85 @@ public abstract class AbstractJavaSyntaxVisitor extends AbstractTypeArgumentVisi
     }
 
     @Override
-    @SuppressWarnings("unchecked")
     public void visit(Types types) {
-        Iterator<Type> iterator = types.iterator();
-
-        while (iterator.hasNext()) {
-            BaseType type = iterator.next();
-
+        for (BaseType type : types) {
             type.accept(this);
         }
     }
 
     public void acceptListDeclaration(List<? extends Declaration> list) {
-        for (Declaration declaration : list)
+        for (Declaration declaration : list) {
             declaration.accept(this);
+        }
     }
 
     public void acceptListExpression(List<? extends Expression> list) {
-        for (Expression expression : list)
+        for (Expression expression : list) {
             expression.accept(this);
+        }
     }
 
     public void acceptListReference(List<? extends Reference> list) {
-        for (Reference reference : list)
+        for (Reference reference : list) {
             reference.accept(this);
+        }
     }
 
     public void acceptListStatement(List<? extends Statement> list) {
-        for (Statement statement : list)
+        for (Statement statement : list) {
             statement.accept(this);
+        }
     }
 
     public void safeAccept(Declaration declaration) {
-        if (declaration != null)
+        if (declaration != null) {
             declaration.accept(this);
+        }
     }
 
     public void safeAccept(BaseExpression expression) {
-        if (expression != null)
+        if (expression != null) {
             expression.accept(this);
+        }
     }
 
     public void safeAccept(Reference reference) {
-        if (reference != null)
+        if (reference != null) {
             reference.accept(this);
+        }
     }
 
     public void safeAccept(BaseStatement list) {
-        if (list != null)
+        if (list != null) {
             list.accept(this);
+        }
     }
 
     public void safeAccept(BaseType list) {
-        if (list != null)
+        if (list != null) {
             list.accept(this);
+        }
     }
 
     public void safeAccept(BaseTypeParameter list) {
-        if (list != null)
+        if (list != null) {
             list.accept(this);
+        }
     }
 
     public void safeAcceptListDeclaration(List<? extends Declaration> list) {
         if (list != null) {
-            for (Declaration declaration : list)
+            for (Declaration declaration : list) {
                 declaration.accept(this);
+            }
         }
     }
 
     public void safeAcceptListStatement(List<? extends Statement> list) {
         if (list != null) {
-            for (Statement statement : list)
+            for (Statement statement : list) {
                 statement.accept(this);
+            }
         }
     }
 }

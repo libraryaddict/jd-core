@@ -7,8 +7,15 @@
 
 package org.jd.core.v1.service.converter.classfiletojavasyntax.visitor;
 
+import org.apache.bcel.Const;
 import org.jd.core.v1.model.javasyntax.AbstractJavaSyntaxVisitor;
-import org.jd.core.v1.model.javasyntax.declaration.*;
+import org.jd.core.v1.model.javasyntax.CompilationUnit;
+import org.jd.core.v1.model.javasyntax.declaration.AnnotationDeclaration;
+import org.jd.core.v1.model.javasyntax.declaration.BodyDeclaration;
+import org.jd.core.v1.model.javasyntax.declaration.ClassDeclaration;
+import org.jd.core.v1.model.javasyntax.declaration.EnumDeclaration;
+import org.jd.core.v1.model.javasyntax.declaration.InterfaceDeclaration;
+import org.jd.core.v1.model.javasyntax.declaration.TypeDeclaration;
 import org.jd.core.v1.service.converter.classfiletojavasyntax.model.javasyntax.declaration.ClassFileBodyDeclaration;
 import org.jd.core.v1.service.converter.classfiletojavasyntax.model.javasyntax.declaration.ClassFileEnumDeclaration;
 import org.jd.core.v1.service.converter.classfiletojavasyntax.util.TypeMaker;
@@ -18,16 +25,16 @@ public class UpdateJavaSyntaxTreeStep2Visitor extends AbstractJavaSyntaxVisitor 
     protected static final SortMembersVisitor SORT_MEMBERS_VISITOR = new SortMembersVisitor();
     protected static final AutoboxingVisitor AUTOBOXING_VISITOR = new AutoboxingVisitor();
 
-    protected InitStaticFieldVisitor initStaticFieldVisitor = new InitStaticFieldVisitor();
-    protected InitInstanceFieldVisitor initInstanceFieldVisitor = new InitInstanceFieldVisitor();
-    protected InitEnumVisitor initEnumVisitor = new InitEnumVisitor();
-    protected RemoveDefaultConstructorVisitor removeDefaultConstructorVisitor = new RemoveDefaultConstructorVisitor();
+    private final InitStaticFieldVisitor initStaticFieldVisitor = new InitStaticFieldVisitor();
+    private final InitInstanceFieldVisitor initInstanceFieldVisitor = new InitInstanceFieldVisitor();
+    private final InitEnumVisitor initEnumVisitor = new InitEnumVisitor();
+    private final RemoveDefaultConstructorVisitor removeDefaultConstructorVisitor = new RemoveDefaultConstructorVisitor();
 
-    protected UpdateBridgeMethodVisitor replaceBridgeMethodVisitor;
-    protected InitInnerClassVisitor.UpdateNewExpressionVisitor initInnerClassStep2Visitor;
-    protected AddCastExpressionVisitor addCastExpressionVisitor;
+    private final UpdateBridgeMethodVisitor replaceBridgeMethodVisitor;
+    private final InitInnerClassVisitor.UpdateNewExpressionVisitor initInnerClassStep2Visitor;
+    private final AddCastExpressionVisitor addCastExpressionVisitor;
 
-    protected TypeDeclaration typeDeclaration;
+    private TypeDeclaration typeDeclaration;
 
     public UpdateJavaSyntaxTreeStep2Visitor(TypeMaker typeMaker) {
         this.replaceBridgeMethodVisitor = new UpdateBridgeMethodVisitor(typeMaker);
@@ -40,7 +47,7 @@ public class UpdateJavaSyntaxTreeStep2Visitor extends AbstractJavaSyntaxVisitor 
         ClassFileBodyDeclaration bodyDeclaration = (ClassFileBodyDeclaration)declaration;
 
         // Visit inner types
-        if (bodyDeclaration.getInnerTypeDeclarations() != null) {
+        if (bodyDeclaration.hasInnerTypeDeclarations()) {
             TypeDeclaration td = typeDeclaration;
             acceptListDeclaration(bodyDeclaration.getInnerTypeDeclarations());
             typeDeclaration = td;
@@ -57,17 +64,13 @@ public class UpdateJavaSyntaxTreeStep2Visitor extends AbstractJavaSyntaxVisitor 
         AGGREGATE_FIELDS_VISITOR.visit(declaration);
         SORT_MEMBERS_VISITOR.visit(declaration);
 
-        if (bodyDeclaration.getOuterBodyDeclaration() == null) {
-            // Main body declaration
-
-            if ((bodyDeclaration.getInnerTypeDeclarations() != null) && replaceBridgeMethodVisitor.init(bodyDeclaration)) {
+        if (bodyDeclaration.isMainBodyDeclaration()) {
+            if (bodyDeclaration.hasInnerTypeDeclarations() && replaceBridgeMethodVisitor.init(bodyDeclaration)) {
                 // Replace bridge method invocation
                 replaceBridgeMethodVisitor.visit(bodyDeclaration);
             }
-
             // Add cast expressions
             addCastExpressionVisitor.visit(declaration);
-
             // Autoboxing
             AUTOBOXING_VISITOR.visit(declaration);
         }
@@ -82,13 +85,17 @@ public class UpdateJavaSyntaxTreeStep2Visitor extends AbstractJavaSyntaxVisitor 
     @Override
     public void visit(ClassDeclaration declaration) {
         this.typeDeclaration = declaration;
+        addCastExpressionVisitor.pushContext(declaration);
         safeAccept(declaration.getBodyDeclaration());
+        addCastExpressionVisitor.popContext(declaration);
     }
 
     @Override
     public void visit(InterfaceDeclaration declaration) {
         this.typeDeclaration = declaration;
+        addCastExpressionVisitor.pushContext(declaration);
         safeAccept(declaration.getBodyDeclaration());
+        addCastExpressionVisitor.popContext(declaration);
     }
 
     @Override
@@ -98,9 +105,15 @@ public class UpdateJavaSyntaxTreeStep2Visitor extends AbstractJavaSyntaxVisitor 
         // Remove 'static', 'final' and 'abstract' flags
         ClassFileEnumDeclaration cfed = (ClassFileEnumDeclaration)declaration;
 
-        cfed.setFlags(cfed.getFlags() & ~(Declaration.FLAG_STATIC|Declaration.FLAG_FINAL|Declaration.FLAG_ABSTRACT));
+        cfed.setFlags(cfed.getFlags() & ~(Const.ACC_STATIC|Const.ACC_FINAL|Const.ACC_ABSTRACT));
         cfed.getBodyDeclaration().accept(this);
         initEnumVisitor.visit(cfed.getBodyDeclaration());
         cfed.setConstants(initEnumVisitor.getConstants());
+    }
+    
+    @Override
+    public void visit(CompilationUnit compilationUnit) {
+        SORT_MEMBERS_VISITOR.init();
+        super.visit(compilationUnit);
     }
 }

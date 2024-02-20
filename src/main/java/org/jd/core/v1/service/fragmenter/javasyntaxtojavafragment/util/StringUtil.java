@@ -7,8 +7,11 @@
 
 package org.jd.core.v1.service.fragmenter.javasyntaxtojavafragment.util;
 
+public final class StringUtil {
 
-public class StringUtil {
+    private StringUtil() {
+        super();
+    }
 
     public static String escapeString(String s) {
         int length = s.length();
@@ -16,7 +19,7 @@ public class StringUtil {
         for (int i = 0; i < length; i++) {
             char c = s.charAt(i);
 
-            if ((c == '\\') || (c == '"') || (c < ' ')) {
+            if (c == '\\' || c == '"' || c < ' ') {
                 StringBuilder sb = new StringBuilder(length * 2);
 
                 sb.append(s.substring(0, i));
@@ -49,8 +52,8 @@ public class StringUtil {
                         default:
                             if (c < ' ') {
                                 sb.append("\\0");
-                                sb.append((char)('0' + ((int)c >> 3)));
-                                sb.append((char)('0' + ((int)c & 7)));
+                                sb.append((char)('0' + (c >> 3)));
+                                sb.append((char)('0' + (c & 7)));
                             } else {
                                 sb.append(c);
                             }

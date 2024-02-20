@@ -7,19 +7,27 @@
 
 package org.jd.core.v1.service.converter.classfiletojavasyntax.model.cfg;
 
-import org.jd.core.v1.model.classfile.Method;
+import org.apache.bcel.classfile.Method;
+import org.jd.core.v1.service.converter.classfiletojavasyntax.processor.block.api.BlockProcessor;
 import org.jd.core.v1.util.DefaultList;
 
 import java.util.HashSet;
+import java.util.Set;
+
+import static org.jd.core.v1.service.converter.classfiletojavasyntax.model.cfg.BasicBlock.TYPE_JUMP;
 
 public class ControlFlowGraph {
-    protected Method method;
-    protected DefaultList<BasicBlock> list = new DefaultList<BasicBlock>() {
+    private final Method method;
+    private final DefaultList<BasicBlock> list = new DefaultList<>() {
+
+        private static final long serialVersionUID = 1L;
+
+        @Override
         public BasicBlock remove(int index) {
-            throw new RuntimeException("Unexpected call");
+            throw new UnsupportedOperationException();
         }
     };
-    protected int[] offsetToLineNumbers = null;
+    private int[] offsetToLineNumbers;
 
     public ControlFlowGraph(Method method) {
         this.method = method;
@@ -59,17 +67,40 @@ public class ControlFlowGraph {
         return basicBlock;
     }
 
-    public BasicBlock newBasicBlock(int type, int fromOffset, int toOffset, HashSet<BasicBlock> predecessors) {
+    public BasicBlock newBasicBlock(int type, int fromOffset, int toOffset, Set<BasicBlock> predecessors) {
         BasicBlock basicBlock = new BasicBlock(this, list.size(), type, fromOffset, toOffset, true, predecessors);
         list.add(basicBlock);
         return basicBlock;
     }
 
+
+    public BasicBlock newJumpBasicBlock(BasicBlock bb, BasicBlock target) {
+        Set<BasicBlock> predecessors = new HashSet<>();
+
+        predecessors.add(bb);
+        target.getPredecessors().remove(bb);
+
+        return newBasicBlock(TYPE_JUMP, bb.getFromOffset(), target.getFromOffset(), predecessors);
+    }
+    
     public void setOffsetToLineNumbers(int[] offsetToLineNumbers) {
         this.offsetToLineNumbers = offsetToLineNumbers;
     }
 
     public int getLineNumber(int offset) {
-        return (offsetToLineNumbers == null) ? 0 : offsetToLineNumbers[offset];
+        return offsetToLineNumbers == null || offset < 0 ? 0 : offsetToLineNumbers[offset];
+    }
+    
+    public void accept(BlockProcessor blockProcessor) {
+        blockProcessor.process(this);
+    }
+
+    public boolean contains(int basickBlockType) {
+        for (BasicBlock basicBlock : list) {
+            if (basicBlock.getType() == basickBlockType) {
+                return true;
+            }
+        }
+        return false;
     }
 }

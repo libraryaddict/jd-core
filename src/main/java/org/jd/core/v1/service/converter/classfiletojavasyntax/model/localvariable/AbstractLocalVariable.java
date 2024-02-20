@@ -13,24 +13,28 @@ import org.jd.core.v1.util.DefaultList;
 
 import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 
 public abstract class AbstractLocalVariable {
-    protected Frame frame;
-    protected AbstractLocalVariable next;
-    protected boolean declared;
-    protected int index;
-    protected int fromOffset;
-    protected int toOffset;
+    private Frame frame;
+    private AbstractLocalVariable next;
+    private AbstractLocalVariable originalVariable;
+    private boolean declared;
+    private boolean assigned;
+    private final int index;
+    private int fromOffset;
+    private int toOffset;
     protected String name;
-    protected DefaultList<LocalVariableReference> references = new DefaultList<>();
-    protected HashSet<AbstractLocalVariable> variablesOnRight = null;
-    protected HashSet<AbstractLocalVariable> variablesOnLeft = null;
+    private String oldName;
+    private final DefaultList<LocalVariableReference> references = new DefaultList<>();
+    private Set<AbstractLocalVariable> variablesOnRight;
+    private Set<AbstractLocalVariable> variablesOnLeft;
 
-    public AbstractLocalVariable(int index, int offset, String name) {
-        this(index, offset, name, (offset == 0));
+    protected AbstractLocalVariable(int index, int offset, String name) {
+        this(index, offset, name, offset == 0);
     }
 
-    public AbstractLocalVariable(int index, int offset, String name, boolean declared) {
+    protected AbstractLocalVariable(int index, int offset, String name, boolean declared) {
         this.declared = declared;
         this.index = index;
         this.fromOffset = offset;
@@ -39,10 +43,10 @@ public abstract class AbstractLocalVariable {
     }
 
     public Frame getFrame() { return frame; }
-    public void setFrame(Frame frame) { this.frame = frame; }
+    void setFrame(Frame frame) { this.frame = frame; }
 
     public AbstractLocalVariable getNext() { return next; }
-    public void setNext(AbstractLocalVariable next) { this.next = next; }
+    void setNext(AbstractLocalVariable next) { this.next = next; }
 
     public boolean isDeclared() { return declared; }
     public void setDeclared(boolean declared) { this.declared = declared; }
@@ -51,21 +55,25 @@ public abstract class AbstractLocalVariable {
 
     public int getFromOffset() { return fromOffset; }
 
-    public void setFromOffset(int fromOffset) {
-        assert fromOffset <= toOffset;
+    void setFromOffset(int fromOffset) {
+        if (fromOffset > toOffset) {
+            throw new IllegalArgumentException("fromOffset > toOffset");
+        }
         this.fromOffset = fromOffset;
     }
 
     public int getToOffset() { return toOffset; }
 
-    public void setToOffset(int offset) {
-        if (this.fromOffset > offset)
+    public void setFromToOffset(int offset) {
+        if (this.fromOffset > offset) {
             this.fromOffset = offset;
-        if (this.toOffset < offset)
+        }
+        if (this.toOffset < offset) {
             this.toOffset = offset;
+        }
     }
 
-    public void setToOffset(int offset, boolean force) {
+    void setToOffset(int offset) {
         this.toOffset = offset;
     }
 
@@ -73,6 +81,9 @@ public abstract class AbstractLocalVariable {
 
     public String getName() { return name; }
     public void setName(String name) { this.name = name; }
+    
+    public String getOldName() { return oldName; }
+    public void setOldName(String oldName) { this.oldName = oldName; }
 
     public abstract int getDimension();
 
@@ -129,4 +140,20 @@ public abstract class AbstractLocalVariable {
     }
 
     public boolean isPrimitiveLocalVariable() { return false; }
+
+    public boolean isAssigned() {
+        return assigned;
+    }
+
+    public void setAssigned(boolean assigned) {
+        this.assigned = assigned;
+    }
+
+    public AbstractLocalVariable getOriginalVariable() {
+        return originalVariable;
+    }
+
+    public void setOriginalVariable(AbstractLocalVariable originalVariable) {
+        this.originalVariable = originalVariable;
+    }
 }

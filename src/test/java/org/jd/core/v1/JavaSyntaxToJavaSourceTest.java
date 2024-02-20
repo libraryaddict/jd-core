@@ -7,22 +7,59 @@
 
 package org.jd.core.v1;
 
-import junit.framework.TestCase;
+import org.apache.bcel.Const;
 import org.jd.core.v1.loader.NopLoader;
 import org.jd.core.v1.model.javasyntax.CompilationUnit;
-import org.jd.core.v1.model.javasyntax.declaration.*;
-import org.jd.core.v1.model.javasyntax.expression.*;
-import org.jd.core.v1.model.javasyntax.statement.*;
+import org.jd.core.v1.model.javasyntax.declaration.BodyDeclaration;
+import org.jd.core.v1.model.javasyntax.declaration.ClassDeclaration;
+import org.jd.core.v1.model.javasyntax.declaration.ConstructorDeclaration;
+import org.jd.core.v1.model.javasyntax.declaration.EnumDeclaration;
+import org.jd.core.v1.model.javasyntax.declaration.ExpressionVariableInitializer;
+import org.jd.core.v1.model.javasyntax.declaration.FieldDeclaration;
+import org.jd.core.v1.model.javasyntax.declaration.FieldDeclarator;
+import org.jd.core.v1.model.javasyntax.declaration.FormalParameter;
+import org.jd.core.v1.model.javasyntax.declaration.FormalParameters;
+import org.jd.core.v1.model.javasyntax.declaration.InterfaceDeclaration;
+import org.jd.core.v1.model.javasyntax.declaration.LocalVariableDeclarator;
+import org.jd.core.v1.model.javasyntax.declaration.MemberDeclarations;
+import org.jd.core.v1.model.javasyntax.declaration.MethodDeclaration;
+import org.jd.core.v1.model.javasyntax.expression.ArrayExpression;
+import org.jd.core.v1.model.javasyntax.expression.BinaryOperatorExpression;
+import org.jd.core.v1.model.javasyntax.expression.BooleanExpression;
+import org.jd.core.v1.model.javasyntax.expression.DoubleConstantExpression;
+import org.jd.core.v1.model.javasyntax.expression.Expressions;
+import org.jd.core.v1.model.javasyntax.expression.FieldReferenceExpression;
+import org.jd.core.v1.model.javasyntax.expression.IntegerConstantExpression;
+import org.jd.core.v1.model.javasyntax.expression.LengthExpression;
+import org.jd.core.v1.model.javasyntax.expression.LocalVariableReferenceExpression;
+import org.jd.core.v1.model.javasyntax.expression.MethodInvocationExpression;
+import org.jd.core.v1.model.javasyntax.expression.NewExpression;
+import org.jd.core.v1.model.javasyntax.expression.NullExpression;
+import org.jd.core.v1.model.javasyntax.expression.ObjectTypeReferenceExpression;
+import org.jd.core.v1.model.javasyntax.expression.ParenthesesExpression;
+import org.jd.core.v1.model.javasyntax.expression.StringConstantExpression;
+import org.jd.core.v1.model.javasyntax.expression.ThisExpression;
+import org.jd.core.v1.model.javasyntax.statement.ExpressionStatement;
+import org.jd.core.v1.model.javasyntax.statement.ForEachStatement;
+import org.jd.core.v1.model.javasyntax.statement.IfStatement;
+import org.jd.core.v1.model.javasyntax.statement.LocalVariableDeclarationStatement;
+import org.jd.core.v1.model.javasyntax.statement.ReturnExpressionStatement;
+import org.jd.core.v1.model.javasyntax.statement.ReturnStatement;
+import org.jd.core.v1.model.javasyntax.statement.Statements;
+import org.jd.core.v1.model.javasyntax.statement.SwitchStatement;
 import org.jd.core.v1.model.javasyntax.type.ObjectType;
 import org.jd.core.v1.model.javasyntax.type.PrimitiveType;
 import org.jd.core.v1.model.javasyntax.type.Type;
 import org.jd.core.v1.model.javasyntax.type.Types;
-import org.jd.core.v1.model.message.Message;
+import org.jd.core.v1.model.message.DecompileContext;
+import org.jd.core.v1.model.token.Token;
 import org.jd.core.v1.printer.PlainTextMetaPrinter;
 import org.jd.core.v1.service.fragmenter.javasyntaxtojavafragment.JavaSyntaxToJavaFragmentProcessor;
 import org.jd.core.v1.service.layouter.LayoutFragmentProcessor;
 import org.jd.core.v1.service.tokenizer.javafragmenttotoken.JavaFragmentToTokenProcessor;
 import org.jd.core.v1.service.writer.WriteTokenProcessor;
+import org.jd.core.v1.util.DefaultList;
+import org.jd.core.v1.util.StringConstants;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -30,7 +67,14 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Map;
 
-@SuppressWarnings("unchecked")
+import static org.apache.bcel.Const.ACC_FINAL;
+import static org.apache.bcel.Const.ACC_PRIVATE;
+import static org.apache.bcel.Const.ACC_PUBLIC;
+import static org.apache.bcel.Const.ACC_STATIC;
+
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
+import junit.framework.TestCase;
+
 public class JavaSyntaxToJavaSourceTest extends TestCase {
 
     protected JavaSyntaxToJavaFragmentProcessor fragmenter = new JavaSyntaxToJavaFragmentProcessor();
@@ -41,18 +85,18 @@ public class JavaSyntaxToJavaSourceTest extends TestCase {
 
     @Test
     public void testClassDeclaration() throws Exception {
-        ObjectType stringArrayType = new ObjectType("java/lang/String", "java.lang.String", "String", 1);
+        ObjectType stringArrayType = new ObjectType(StringConstants.JAVA_LANG_STRING, "java.lang.String", "String", 1);
         ObjectType printStreamType = new ObjectType("java/io/PrintStream", "java.io.PrintStream", "PrintStream");
 
         CompilationUnit compilationUnit = new CompilationUnit(
             new ClassDeclaration(
-                ClassDeclaration.FLAG_PUBLIC,
+                Const.ACC_PUBLIC,
                 "org/jd/core/v1/service/test/TokenWriterTest",
                 "TokenWriterTest",
                 new BodyDeclaration(
                     "org/jd/core/v1/service/test/TokenWriterTest",
                     new MethodDeclaration(
-                        MethodDeclaration.FLAG_PUBLIC | MethodDeclaration.FLAG_STATIC,
+                        Const.ACC_PUBLIC | Const.ACC_STATIC,
                         "main",
                         PrimitiveType.TYPE_VOID,
                         new FormalParameter(ObjectType.TYPE_STRING.createType(1), "args"),
@@ -71,7 +115,7 @@ public class JavaSyntaxToJavaSourceTest extends TestCase {
                             ),
                             new LocalVariableDeclarationStatement(
                                 PrimitiveType.TYPE_INT,
-                                new LocalVariableDeclarator(
+                                new LocalVariableDeclarator(0,
                                     "i",
                                     new ExpressionVariableInitializer(
                                         new MethodInvocationExpression(
@@ -92,24 +136,27 @@ public class JavaSyntaxToJavaSourceTest extends TestCase {
                                                         "java/util/Enumeration",
                                                         new MemberDeclarations(
                                                             new MethodDeclaration(
-                                                                MethodDeclaration.FLAG_PUBLIC,
+                                                                Const.ACC_PUBLIC,
                                                                 "hasMoreElements",
                                                                 PrimitiveType.TYPE_BOOLEAN,
                                                                 "()Z",
                                                                 new ReturnExpressionStatement(new BooleanExpression(15, false))
                                                             ),
                                                             new MethodDeclaration(
-                                                                MethodDeclaration.FLAG_PUBLIC,
+                                                                Const.ACC_PUBLIC,
                                                                 "nextElement",
                                                                 ObjectType.TYPE_OBJECT,
                                                                 "()Ljava/lang/Object;",
                                                                 new ReturnExpressionStatement(new NullExpression(18, ObjectType.TYPE_OBJECT))
                                                             )
                                                         )
-                                                    )
+                                                    ),
+                                                    false,
+                                                    false
                                                 ),
                                                 new LocalVariableReferenceExpression(21, PrimitiveType.TYPE_CHAR, "c")
-                                            )
+                                            ),
+                                            null
                                         )
                                     )
                                 )
@@ -121,15 +168,16 @@ public class JavaSyntaxToJavaSourceTest extends TestCase {
                                     new FieldReferenceExpression(
                                         22,
                                         printStreamType,
-                                        new ObjectTypeReferenceExpression(22, new ObjectType("java/lang/System", "java.lang.System", "System")),
-                                        "java/lang/System",
+                                        new ObjectTypeReferenceExpression(22, new ObjectType(StringConstants.JAVA_LANG_SYSTEM, "java.lang.System", "System")),
+                                        StringConstants.JAVA_LANG_SYSTEM,
                                         "out",
                                         "Ljava/io/PrintStream;"
                                     ),
                                     "java/io/PrintStream",
                                     "println",
                                     "(I)V",
-                                    new LocalVariableReferenceExpression(22, PrimitiveType.TYPE_INT, "i")
+                                    new LocalVariableReferenceExpression(22, PrimitiveType.TYPE_INT, "i"),
+                                    null
                                 )
                             )
                         )
@@ -140,20 +188,22 @@ public class JavaSyntaxToJavaSourceTest extends TestCase {
 
         PlainTextMetaPrinter printer = new PlainTextMetaPrinter();
         Map<String, Object> configuration = Collections.singletonMap("realignLineNumbers", Boolean.TRUE);
-        Message message = new Message(compilationUnit);
+        DecompileContext decompileContext = new DecompileContext();
+        decompileContext.setCompilationUnit(compilationUnit);
 
-        message.setHeader("mainInternalTypeName", "org/jd/core/v1/service/test/TokenWriterTest");
-        message.setHeader("loader", new NopLoader());
-        message.setHeader("printer", printer);
-        message.setHeader("configuration", configuration);
-        message.setHeader("maxLineNumber", 22);
-        message.setHeader("majorVersion", 0);
-        message.setHeader("minorVersion", 0);
+        decompileContext.setMainInternalTypeName("org/jd/core/v1/service/test/TokenWriterTest");
+        decompileContext.setLoader(new NopLoader());
+        decompileContext.setPrinter(printer);
+        decompileContext.setConfiguration(configuration);
+        decompileContext.setMaxLineNumber(22);
+        decompileContext.setMajorVersion(0);
+        decompileContext.setMinorVersion(0);
 
-        fragmenter.process(message);
-        layouter.process(message);
-        tokenizer.process(message);
-        writer.process(message);
+        fragmenter.process(compilationUnit, decompileContext);
+        layouter.process(decompileContext);
+        DefaultList<Token> tokens = tokenizer.process(decompileContext.getBody());
+        decompileContext.setTokens(tokens);
+        writer.process(decompileContext);
 
         String source = printer.toString();
 
@@ -161,19 +211,19 @@ public class JavaSyntaxToJavaSourceTest extends TestCase {
         System.out.print(source);
         System.out.println("- - - - - - - - ");
 
-        Assert.assertTrue(source.indexOf("/* 22: 22 */") != -1);
-        Assert.assertTrue(source.indexOf("java.lang.System") == -1);
+        Assert.assertNotEquals(-1, source.indexOf("/* 22: 22 */"));
+        Assert.assertEquals(-1, source.indexOf("java.lang.System"));
     }
 
     @Test
     public void testInterfaceDeclaration() throws Exception {
-        ObjectType cloneableType = new ObjectType("java/lang/Cloneable", "java.lang.Cloneable", "Cloneable");
-        ObjectType stringType = new ObjectType("java/lang/String", "java.lang.String", "String");
+        ObjectType cloneableType = new ObjectType(StringConstants.JAVA_LANG_CLONEABLE, "java.lang.Cloneable", "Cloneable");
+        ObjectType stringType = new ObjectType(StringConstants.JAVA_LANG_STRING, "java.lang.String", "String");
         ObjectType listType = new ObjectType("java/util/List", "java.util.List", "List", stringType);
 
         CompilationUnit compilationUnit = new CompilationUnit(
             new InterfaceDeclaration(
-                InterfaceDeclaration.FLAG_PUBLIC,
+                Const.ACC_PUBLIC,
                 "org/jd/core/v1/service/test/InterfaceTest",
                 "InterfaceTest",
                 new Types(listType, cloneableType)
@@ -181,19 +231,22 @@ public class JavaSyntaxToJavaSourceTest extends TestCase {
         );
 
         PlainTextMetaPrinter printer = new PlainTextMetaPrinter();
-        Message message = new Message(compilationUnit);
+        DecompileContext decompileContext = new DecompileContext();
+        decompileContext.setCompilationUnit(compilationUnit);
 
-        message.setHeader("mainInternalTypeName", "org/jd/core/v1/service/test/InterfaceTest");
-        message.setHeader("loader", new NopLoader());
-        message.setHeader("printer", printer);
-        message.setHeader("maxLineNumber", 0);
-        message.setHeader("majorVersion", 49);
-        message.setHeader("minorVersion", 0);
+        decompileContext.setMainInternalTypeName("org/jd/core/v1/service/test/InterfaceTest");
+        decompileContext.setLoader(new NopLoader());
+        decompileContext.setPrinter(printer);
+        decompileContext.setMaxLineNumber(0);
+        decompileContext.setMajorVersion(49);
+        decompileContext.setMinorVersion(0);
 
-        fragmenter.process(message);
-        layouter.process(message);
-        tokenizer.process(message);
-        writer.process(message);
+        fragmenter.process(compilationUnit, decompileContext);
+        layouter.process(decompileContext);
+        DefaultList<Token> tokens = tokenizer.process(decompileContext.getBody());
+        decompileContext.setTokens(tokens);
+
+        writer.process(decompileContext);
 
         String source = printer.toString();
 
@@ -201,11 +254,11 @@ public class JavaSyntaxToJavaSourceTest extends TestCase {
         System.out.print(source);
         System.out.println("- - - - - - - - ");
 
-        Assert.assertTrue(source.indexOf("/*   1:   0 */ package org.jd.core.v1.service.test;") != -1);
-        Assert.assertTrue(source.indexOf("interface InterfaceTest") != -1);
-        Assert.assertTrue(source.indexOf("extends List") != -1);
-        Assert.assertTrue(source.indexOf("<String") != -1);
-        Assert.assertTrue(source.indexOf(", Cloneable") != -1);
+        Assert.assertNotEquals(-1, source.indexOf("/*   1:   0 */ package org.jd.core.v1.service.test;"));
+        Assert.assertNotEquals(-1, source.indexOf("interface InterfaceTest"));
+        Assert.assertNotEquals(-1, source.indexOf("extends List"));
+        Assert.assertNotEquals(-1, source.indexOf("<String"));
+        Assert.assertNotEquals(-1, source.indexOf(", Cloneable"));
     }
 
     @Test
@@ -213,7 +266,7 @@ public class JavaSyntaxToJavaSourceTest extends TestCase {
         CompilationUnit compilationUnit = new CompilationUnit(
             new EnumDeclaration(
                 null,
-                EnumDeclaration.FLAG_PUBLIC,
+                Const.ACC_PUBLIC,
                 "org/jd/core/v1/service/test/Day",
                 "Day",
                 null,
@@ -231,19 +284,22 @@ public class JavaSyntaxToJavaSourceTest extends TestCase {
         );
 
         PlainTextMetaPrinter printer = new PlainTextMetaPrinter();
-        Message message = new Message(compilationUnit);
+        DecompileContext decompileContext = new DecompileContext();
+        decompileContext.setCompilationUnit(compilationUnit);
 
-        message.setHeader("mainInternalTypeName", "org/jd/core/v1/service/test/Day");
-        message.setHeader("loader", new NopLoader());
-        message.setHeader("printer", printer);
-        message.setHeader("maxLineNumber", 0);
-        message.setHeader("majorVersion", 0);
-        message.setHeader("minorVersion", 0);
+        decompileContext.setMainInternalTypeName("org/jd/core/v1/service/test/Day");
+        decompileContext.setLoader(new NopLoader());
+        decompileContext.setPrinter(printer);
+        decompileContext.setMaxLineNumber(0);
+        decompileContext.setMajorVersion(0);
+        decompileContext.setMinorVersion(0);
 
-        fragmenter.process(message);
-        layouter.process(message);
-        tokenizer.process(message);
-        writer.process(message);
+        fragmenter.process(compilationUnit, decompileContext);
+        layouter.process(decompileContext);
+        DefaultList<Token> tokens = tokenizer.process(decompileContext.getBody());
+        decompileContext.setTokens(tokens);
+
+        writer.process(decompileContext);
 
         String source = printer.toString();
 
@@ -255,8 +311,10 @@ public class JavaSyntaxToJavaSourceTest extends TestCase {
     }
 
     @Test
+    @SuppressFBWarnings
+    @SuppressWarnings("all")
     public void testEnumPlanetDeclaration() throws Exception {
-        Type cloneableType = new ObjectType("java/lang/Cloneable", "java.lang.Cloneable", "Cloneable");
+        Type cloneableType = new ObjectType(StringConstants.JAVA_LANG_CLONEABLE, "java.lang.Cloneable", "Cloneable");
         Type stringType = ObjectType.TYPE_STRING;
         Type arrayOfStringType = stringType.createType(1);
         Type listType = new ObjectType("java/util/List", "java.util.List", "List", stringType);
@@ -266,7 +324,7 @@ public class JavaSyntaxToJavaSourceTest extends TestCase {
 
         CompilationUnit compilationUnit = new CompilationUnit(
             new EnumDeclaration(
-                EnumDeclaration.FLAG_PUBLIC,
+                ACC_PUBLIC,
                 "org/jd/core/v1/service/test/Planet",
                 "Planet",
                 Arrays.asList(
@@ -295,8 +353,8 @@ public class JavaSyntaxToJavaSourceTest extends TestCase {
                 new BodyDeclaration(
                     "org/jd/core/v1/service/test/Planet",
                     new MemberDeclarations(
-                        new FieldDeclaration(FieldDeclaration.FLAG_PRIVATE | FieldDeclaration.FLAG_FINAL, PrimitiveType.TYPE_DOUBLE, new FieldDeclarator("mass")),
-                        new FieldDeclaration(FieldDeclaration.FLAG_PRIVATE | FieldDeclaration.FLAG_FINAL, PrimitiveType.TYPE_DOUBLE, new FieldDeclarator("radius")),
+                        new FieldDeclaration(ACC_PRIVATE | ACC_FINAL, PrimitiveType.TYPE_DOUBLE, new FieldDeclarator("mass")),
+                        new FieldDeclaration(ACC_PRIVATE | ACC_FINAL, PrimitiveType.TYPE_DOUBLE, new FieldDeclarator("radius")),
                         new ConstructorDeclaration(
                             0,
                             new FormalParameters(
@@ -324,21 +382,21 @@ public class JavaSyntaxToJavaSourceTest extends TestCase {
                             )
                         ),
                         new MethodDeclaration(
-                            MethodDeclaration.FLAG_PRIVATE,
+                            ACC_PRIVATE,
                             "mass",
                             PrimitiveType.TYPE_DOUBLE,
                             "()D",
                             new ReturnExpressionStatement(new FieldReferenceExpression(PrimitiveType.TYPE_DOUBLE, thisExpression, "org/jd/core/v1/service/test/Planet", "mass", "D"))
                         ),
                         new MethodDeclaration(
-                            MethodDeclaration.FLAG_PRIVATE,
+                            ACC_PRIVATE,
                             "radius",
                             PrimitiveType.TYPE_DOUBLE,
                             "()D",
                             new ReturnExpressionStatement(new FieldReferenceExpression(PrimitiveType.TYPE_DOUBLE, thisExpression, "org/jd/core/v1/service/test/Planet", "radius", "D"))
                         ),
                         new FieldDeclaration(
-                            FieldDeclaration.FLAG_PUBLIC | FieldDeclaration.FLAG_STATIC | FieldDeclaration.FLAG_FINAL,
+                            ACC_PUBLIC | ACC_STATIC | ACC_FINAL,
                             PrimitiveType.TYPE_DOUBLE,
                             new FieldDeclarator("G", new ExpressionVariableInitializer(new DoubleConstantExpression(6.67300E-11)))
                         ),
@@ -385,14 +443,14 @@ public class JavaSyntaxToJavaSourceTest extends TestCase {
                                     new LocalVariableReferenceExpression(PrimitiveType.TYPE_DOUBLE, "otherMass"),
                                     "*",
                                     new MethodInvocationExpression(
-                                        PrimitiveType.TYPE_DOUBLE, thisExpression, "org/jd/core/v1/service/test/Planet", "surfaceGravity", "()D"
+                                        PrimitiveType.TYPE_DOUBLE, thisExpression, "org/jd/core/v1/service/test/Planet", "surfaceGravity", "()D", null
                                     ),
                                     4
                                 )
                             )
                         ),
                         new MethodDeclaration(
-                            MethodDeclaration.FLAG_PUBLIC | MethodDeclaration.FLAG_STATIC,
+                            ACC_PUBLIC | ACC_STATIC,
                             "surfaceWeight",
                             PrimitiveType.TYPE_VOID,
                             new FormalParameter(arrayOfStringType, "args"),
@@ -412,45 +470,48 @@ public class JavaSyntaxToJavaSourceTest extends TestCase {
                                             PrimitiveType.TYPE_VOID,
                                             new FieldReferenceExpression(
                                                 printStreamType,
-                                                new ObjectTypeReferenceExpression(new ObjectType("java/lang/System", "java.lang.System", "System")),
-                                                "java/lang/System",
+                                                new ObjectTypeReferenceExpression(new ObjectType(StringConstants.JAVA_LANG_SYSTEM, "java.lang.System", "System")),
+                                                StringConstants.JAVA_LANG_SYSTEM,
                                                 "out",
                                                 "Ljava/io/PrintStream;"
                                             ),
                                             "java/io/PrintStream",
                                             "println",
                                             "(Ljava/lang/String;)V",
-                                            new StringConstantExpression("Usage: java Planet <earth_weight>")
+                                            new StringConstantExpression("Usage: java Planet <earth_weight>"),
+                                            null
                                         )),
                                         new ExpressionStatement(new MethodInvocationExpression(
                                             PrimitiveType.TYPE_VOID,
-                                            new ObjectTypeReferenceExpression(new ObjectType("java/lang/System", "java.lang.System", "System")),
-                                            "java/lang/System",
+                                            new ObjectTypeReferenceExpression(new ObjectType(StringConstants.JAVA_LANG_SYSTEM, "java.lang.System", "System")),
+                                            StringConstants.JAVA_LANG_SYSTEM,
                                             "exit",
                                             "(I)V",
-                                            new IntegerConstantExpression(PrimitiveType.TYPE_INT, -1)
+                                            new IntegerConstantExpression(PrimitiveType.TYPE_INT, -1),
+                                            null
                                         ))
                                     )
                                 ),
                                 new LocalVariableDeclarationStatement(
                                     PrimitiveType.TYPE_DOUBLE,
-                                    new LocalVariableDeclarator("earthWeight", new ExpressionVariableInitializer(
+                                    new LocalVariableDeclarator(0, "earthWeight", new ExpressionVariableInitializer(
                                         new MethodInvocationExpression(
                                             PrimitiveType.TYPE_DOUBLE,
-                                            new ObjectTypeReferenceExpression(new ObjectType("java/lang/Double", "java.lang.Double", "Double")),
-                                            "java/lang/Double",
+                                            new ObjectTypeReferenceExpression(new ObjectType(StringConstants.JAVA_LANG_DOUBLE, "java.lang.Double", "Double")),
+                                            StringConstants.JAVA_LANG_DOUBLE,
                                             "parseDouble",
                                             "(Ljava/lang/String;)D",
                                             new ArrayExpression(
                                                 new LocalVariableReferenceExpression(arrayOfStringType, "args"),
                                                 new IntegerConstantExpression(PrimitiveType.TYPE_INT, 0)
-                                            )
+                                            ),
+                                            null
                                         )
                                     ))
                                 ),
                                 new LocalVariableDeclarationStatement(
                                     PrimitiveType.TYPE_DOUBLE,
-                                    new LocalVariableDeclarator("mass", new ExpressionVariableInitializer(
+                                    new LocalVariableDeclarator(0, "mass", new ExpressionVariableInitializer(
                                         new BinaryOperatorExpression(
                                             0,
                                             PrimitiveType.TYPE_DOUBLE,
@@ -466,7 +527,8 @@ public class JavaSyntaxToJavaSourceTest extends TestCase {
                                                     "org/jd/core/v1/service/test/Planet"),
                                                 "org/jd/core/v1/service/test/Planet",
                                                 "surfaceGravity",
-                                                "()D"
+                                                "()D",
+                                                null
                                             ),
                                             4
                                         )
@@ -480,13 +542,14 @@ public class JavaSyntaxToJavaSourceTest extends TestCase {
                                         new ObjectTypeReferenceExpression(new ObjectType("org/jd/core/v1/service/test/Planet", "org.jd.core.v1.service.test.Planet", "Planet")),
                                         "org/jd/core/v1/service/test/Planet",
                                         "values",
-                                        "()[Lorg/jd/core/v1/service/test/Planet;"),
+                                        "()[Lorg/jd/core/v1/service/test/Planet;", 
+                                        null),
                                     new ExpressionStatement(new MethodInvocationExpression(
                                         PrimitiveType.TYPE_VOID,
                                         new FieldReferenceExpression(
                                             printStreamType,
-                                            new ObjectTypeReferenceExpression(new ObjectType("java/lang/System", "java.lang.System", "System")),
-                                            "java/lang/System",
+                                            new ObjectTypeReferenceExpression(new ObjectType(StringConstants.JAVA_LANG_SYSTEM, "java.lang.System", "System")),
+                                            StringConstants.JAVA_LANG_SYSTEM,
                                             "out",
                                             "Ljava/io/PrintStream;"
                                         ),
@@ -502,9 +565,11 @@ public class JavaSyntaxToJavaSourceTest extends TestCase {
                                                 "org/jd/core/v1/service/test/Planet",
                                                 "surfaceWeight",
                                                 "(D)D",
-                                                new LocalVariableReferenceExpression(PrimitiveType.TYPE_DOUBLE, "mass")
+                                                new LocalVariableReferenceExpression(PrimitiveType.TYPE_DOUBLE, "mass"),
+                                                null
                                             )
-                                        )
+                                        ),
+                                        null
                                     ))
                                 )
                             )
@@ -515,20 +580,23 @@ public class JavaSyntaxToJavaSourceTest extends TestCase {
         );
 
         PlainTextMetaPrinter printer = new PlainTextMetaPrinter();
-        Message message = new Message(compilationUnit);
+        DecompileContext decompileContext = new DecompileContext();
+        decompileContext.setCompilationUnit(compilationUnit);
 
-        message.setHeader("mainInternalTypeName", "org/jd/core/v1/service/test/Planet");
-        message.setHeader("loader", new NopLoader());
-        message.setHeader("printer", printer);
-        message.setHeader("maxLineNumber", 0);
-        message.setHeader("majorVersion", 0);
-        message.setHeader("minorVersion", 0);
+        decompileContext.setMainInternalTypeName("org/jd/core/v1/service/test/Planet");
+        decompileContext.setLoader(new NopLoader());
+        decompileContext.setPrinter(printer);
+        decompileContext.setMaxLineNumber(0);
+        decompileContext.setMajorVersion(0);
+        decompileContext.setMinorVersion(0);
 
-        fragmenter.process(message);
-        layouter.process(message);
+        fragmenter.process(compilationUnit, decompileContext);
+        DefaultList<Token> tokens = tokenizer.process(decompileContext.getBody());
+        decompileContext.setTokens(tokens);
+
         //tokenizer.process(message);
-        new JavaFragmentToTokenProcessor().process(message);
-        writer.process(message);
+        tokens = new JavaFragmentToTokenProcessor().process(decompileContext.getBody());
+        writer.process(decompileContext);
 
         String source = printer.toString();
 
@@ -541,13 +609,13 @@ public class JavaSyntaxToJavaSourceTest extends TestCase {
     public void testSwitch() throws Exception {
         CompilationUnit compilationUnit = new CompilationUnit(
             new ClassDeclaration(
-                ClassDeclaration.FLAG_PUBLIC,
+                Const.ACC_PUBLIC,
                 "org/jd/core/v1/service/test/SwitchTest",
                 "SwitchTest",
                 new BodyDeclaration(
                     "org/jd/core/v1/service/test/SwitchTest",
                     new MethodDeclaration(
-                        MethodDeclaration.FLAG_PUBLIC | MethodDeclaration.FLAG_STATIC,
+                        Const.ACC_PUBLIC | Const.ACC_STATIC,
                         "translate",
                         PrimitiveType.TYPE_INT,
                         new FormalParameter(PrimitiveType.TYPE_INT, "i"),
@@ -560,7 +628,7 @@ public class JavaSyntaxToJavaSourceTest extends TestCase {
                                     new Statements(
                                         new LocalVariableDeclarationStatement(
                                             ObjectType.TYPE_STRING,
-                                            new LocalVariableDeclarator("zero", new ExpressionVariableInitializer(new StringConstantExpression("zero")))
+                                            new LocalVariableDeclarator(0, "zero", new ExpressionVariableInitializer(new StringConstantExpression("zero")))
                                         ),
                                         new ReturnExpressionStatement(new LocalVariableReferenceExpression(ObjectType.TYPE_STRING, "zero"))
                                     )
@@ -584,19 +652,22 @@ public class JavaSyntaxToJavaSourceTest extends TestCase {
         );
 
         PlainTextMetaPrinter printer = new PlainTextMetaPrinter();
-        Message message = new Message(compilationUnit);
+        DecompileContext decompileContext = new DecompileContext();
+        decompileContext.setCompilationUnit(compilationUnit);
 
-        message.setHeader("mainInternalTypeName", "org/jd/core/v1/service/test/SwitchTest");
-        message.setHeader("loader", new NopLoader());
-        message.setHeader("printer", printer);
-        message.setHeader("maxLineNumber", 0);
-        message.setHeader("majorVersion", 0);
-        message.setHeader("minorVersion", 0);
+        decompileContext.setMainInternalTypeName("org/jd/core/v1/service/test/SwitchTest");
+        decompileContext.setLoader(new NopLoader());
+        decompileContext.setPrinter(printer);
+        decompileContext.setMaxLineNumber(0);
+        decompileContext.setMajorVersion(0);
+        decompileContext.setMinorVersion(0);
 
-        fragmenter.process(message);
-        layouter.process(message);
-        tokenizer.process(message);
-        writer.process(message);
+        fragmenter.process(compilationUnit, decompileContext);
+        layouter.process(decompileContext);
+        DefaultList<Token> tokens = tokenizer.process(decompileContext.getBody());
+        decompileContext.setTokens(tokens);
+
+        writer.process(decompileContext);
 
         String source = printer.toString();
 
@@ -604,32 +675,32 @@ public class JavaSyntaxToJavaSourceTest extends TestCase {
         System.out.print(source);
         System.out.println("- - - - - - - - ");
 
-        Assert.assertTrue(source.indexOf("switch (i)") != -1);
+        Assert.assertNotEquals(-1, source.indexOf("switch (i)"));
     }
 
     @Test
     public void testBridgeAndSyntheticAttributes() throws Exception {
         CompilationUnit compilationUnit = new CompilationUnit(
             new ClassDeclaration(
-                ClassDeclaration.FLAG_PUBLIC,
+                Const.ACC_PUBLIC,
                 "org/jd/core/v1/service/test/SyntheticAttributeTest",
                 "SyntheticAttributeTest",
                 new BodyDeclaration(
                     "org/jd/core/v1/service/test/SyntheticAttributeTest",
                     new MemberDeclarations(
                         new FieldDeclaration(
-                            FieldDeclaration.FLAG_PUBLIC|FieldDeclaration.FLAG_BRIDGE,
+                            Const.ACC_PUBLIC|Const.ACC_BRIDGE,
                             PrimitiveType.TYPE_INT,
                             new FieldDeclarator("i")
                         ),
                         new MethodDeclaration(
-                            MethodDeclaration.FLAG_PUBLIC|MethodDeclaration.FLAG_BRIDGE,
+                            Const.ACC_PUBLIC|Const.ACC_BRIDGE,
                             "testBridgeAttribute",
                             PrimitiveType.TYPE_VOID,
                             "()V"
                         ),
                         new MethodDeclaration(
-                            MethodDeclaration.FLAG_PUBLIC|MethodDeclaration.FLAG_SYNTHETIC,
+                            Const.ACC_PUBLIC|Const.ACC_SYNTHETIC,
                             "testSyntheticAttribute",
                             PrimitiveType.TYPE_VOID,
                             "()V"
@@ -640,19 +711,22 @@ public class JavaSyntaxToJavaSourceTest extends TestCase {
         );
 
         PlainTextMetaPrinter printer = new PlainTextMetaPrinter();
-        Message message = new Message(compilationUnit);
+        DecompileContext decompileContext = new DecompileContext();
+        decompileContext.setCompilationUnit(compilationUnit);
 
-        message.setHeader("mainInternalTypeName", "org/jd/core/v1/service/test/SyntheticAttributeTest");
-        message.setHeader("loader", new NopLoader());
-        message.setHeader("printer", printer);
-        message.setHeader("maxLineNumber", 0);
-        message.setHeader("majorVersion", 0);
-        message.setHeader("minorVersion", 0);
+        decompileContext.setMainInternalTypeName("org/jd/core/v1/service/test/SyntheticAttributeTest");
+        decompileContext.setLoader(new NopLoader());
+        decompileContext.setPrinter(printer);
+        decompileContext.setMaxLineNumber(0);
+        decompileContext.setMajorVersion(0);
+        decompileContext.setMinorVersion(0);
 
-        fragmenter.process(message);
-        layouter.process(message);
-        tokenizer.process(message);
-        writer.process(message);
+        fragmenter.process(compilationUnit, decompileContext);
+        layouter.process(decompileContext);
+        DefaultList<Token> tokens = tokenizer.process(decompileContext.getBody());
+        decompileContext.setTokens(tokens);
+
+        writer.process(decompileContext);
 
         String source = printer.toString();
 
@@ -660,7 +734,7 @@ public class JavaSyntaxToJavaSourceTest extends TestCase {
         System.out.print(source);
         System.out.println("- - - - - - - - ");
 
-        Assert.assertTrue(source.indexOf("/* bridge */") == -1);
-        Assert.assertTrue(source.indexOf("/* synthetic */") == -1);
+        Assert.assertEquals(-1, source.indexOf("/* bridge */"));
+        Assert.assertEquals(-1, source.indexOf("/* synthetic */"));
     }
 }

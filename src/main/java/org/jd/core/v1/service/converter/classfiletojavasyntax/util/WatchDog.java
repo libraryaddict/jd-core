@@ -10,20 +10,21 @@ package org.jd.core.v1.service.converter.classfiletojavasyntax.util;
 import org.jd.core.v1.service.converter.classfiletojavasyntax.model.cfg.BasicBlock;
 
 import java.util.HashSet;
+import java.util.Set;
 
 public class WatchDog {
-    protected HashSet<Link> links = new HashSet<>();
+    protected final Set<Link> links = new HashSet<>();
 
     public void clear() {
         links.clear();
     }
 
     public void check(BasicBlock parent, BasicBlock child) {
-        if (!child.matchType(BasicBlock.GROUP_END)) {
+        if (child != null && !child.matchType(BasicBlock.GROUP_END)) {
             Link link = new Link(parent, child);
 
             if (links.contains(link)) {
-                throw new RuntimeException("CFG watchdog: parent=" + parent + ", child=" + child);
+                throw new IllegalStateException("CFG watchdog: parent=" + parent + ", child=" + child);
             }
 
             links.add(link);
@@ -31,8 +32,8 @@ public class WatchDog {
     }
 
     protected static class Link {
-        protected int parentIndex;
-        protected int childIndex;
+        private final int parentIndex;
+        private final int childIndex;
 
         public Link(BasicBlock parent, BasicBlock child) {
             this.parentIndex = parent.getIndex();
@@ -41,14 +42,19 @@ public class WatchDog {
 
         @Override
         public int hashCode() {
-            return 4807589 + parentIndex + 31 * childIndex;
+            return 4_807_589 + parentIndex + 31 * childIndex;
         }
 
         @Override
         public boolean equals(Object o) {
-            Link other = (Link)o;
-
-            return (parentIndex == other.parentIndex) && (childIndex == other.childIndex);
+            if (this == o) {
+                return true;
+            }
+            if (o == null || o.getClass() != getClass()) {
+                return false;
+            }
+            Link other = (Link) o;
+            return parentIndex == other.parentIndex && childIndex == other.childIndex;
         }
     }
 }

@@ -4,34 +4,102 @@
  * This is a Copyleft license that gives the user the right to use,
  * copy and modify the code freely for non-commercial purposes.
  */
-
 package org.jd.core.v1.service.fragmenter.javasyntaxtojavafragment.visitor;
 
 import org.jd.core.v1.api.loader.Loader;
 import org.jd.core.v1.api.printer.Printer;
 import org.jd.core.v1.model.fragment.Fragment;
-import org.jd.core.v1.model.javafragment.*;
+import org.jd.core.v1.model.javafragment.ImportsFragment;
+import org.jd.core.v1.model.javafragment.LineNumberTokensFragment;
+import org.jd.core.v1.model.javafragment.StartBlockFragment;
+import org.jd.core.v1.model.javafragment.StartBodyFragment;
+import org.jd.core.v1.model.javafragment.TokensFragment;
+import org.jd.core.v1.model.javasyntax.declaration.ArrayVariableInitializer;
 import org.jd.core.v1.model.javasyntax.declaration.BaseFormalParameter;
 import org.jd.core.v1.model.javasyntax.declaration.BodyDeclaration;
 import org.jd.core.v1.model.javasyntax.declaration.FormalParameter;
-import org.jd.core.v1.model.javasyntax.expression.*;
+import org.jd.core.v1.model.javasyntax.declaration.VariableInitializer;
+import org.jd.core.v1.model.javasyntax.expression.ArrayExpression;
+import org.jd.core.v1.model.javasyntax.expression.BaseExpression;
+import org.jd.core.v1.model.javasyntax.expression.BinaryOperatorExpression;
+import org.jd.core.v1.model.javasyntax.expression.BooleanExpression;
+import org.jd.core.v1.model.javasyntax.expression.CastExpression;
+import org.jd.core.v1.model.javasyntax.expression.CommentExpression;
+import org.jd.core.v1.model.javasyntax.expression.ConstructorInvocationExpression;
+import org.jd.core.v1.model.javasyntax.expression.ConstructorReferenceExpression;
+import org.jd.core.v1.model.javasyntax.expression.DoubleConstantExpression;
+import org.jd.core.v1.model.javasyntax.expression.EnumConstantReferenceExpression;
+import org.jd.core.v1.model.javasyntax.expression.Expression;
+import org.jd.core.v1.model.javasyntax.expression.Expressions;
+import org.jd.core.v1.model.javasyntax.expression.FieldReferenceExpression;
+import org.jd.core.v1.model.javasyntax.expression.FloatConstantExpression;
+import org.jd.core.v1.model.javasyntax.expression.InstanceOfExpression;
+import org.jd.core.v1.model.javasyntax.expression.IntegerConstantExpression;
+import org.jd.core.v1.model.javasyntax.expression.LambdaFormalParametersExpression;
+import org.jd.core.v1.model.javasyntax.expression.LambdaIdentifiersExpression;
+import org.jd.core.v1.model.javasyntax.expression.LengthExpression;
+import org.jd.core.v1.model.javasyntax.expression.LocalVariableReferenceExpression;
+import org.jd.core.v1.model.javasyntax.expression.LongConstantExpression;
+import org.jd.core.v1.model.javasyntax.expression.MethodInvocationExpression;
+import org.jd.core.v1.model.javasyntax.expression.MethodReferenceExpression;
+import org.jd.core.v1.model.javasyntax.expression.NewArray;
+import org.jd.core.v1.model.javasyntax.expression.NewExpression;
+import org.jd.core.v1.model.javasyntax.expression.NewInitializedArray;
+import org.jd.core.v1.model.javasyntax.expression.NoExpression;
+import org.jd.core.v1.model.javasyntax.expression.NullExpression;
+import org.jd.core.v1.model.javasyntax.expression.ObjectTypeReferenceExpression;
+import org.jd.core.v1.model.javasyntax.expression.ParenthesesExpression;
+import org.jd.core.v1.model.javasyntax.expression.PostOperatorExpression;
+import org.jd.core.v1.model.javasyntax.expression.PreOperatorExpression;
+import org.jd.core.v1.model.javasyntax.expression.QualifiedSuperExpression;
+import org.jd.core.v1.model.javasyntax.expression.StringConstantExpression;
+import org.jd.core.v1.model.javasyntax.expression.SuperConstructorInvocationExpression;
+import org.jd.core.v1.model.javasyntax.expression.SuperExpression;
+import org.jd.core.v1.model.javasyntax.expression.TernaryOperatorExpression;
+import org.jd.core.v1.model.javasyntax.expression.ThisExpression;
+import org.jd.core.v1.model.javasyntax.expression.TypeReferenceDotClassExpression;
 import org.jd.core.v1.model.javasyntax.statement.BaseStatement;
-import org.jd.core.v1.model.javasyntax.type.*;
-import org.jd.core.v1.model.token.*;
+import org.jd.core.v1.model.javasyntax.type.BaseType;
+import org.jd.core.v1.model.javasyntax.type.BaseTypeArgument;
+import org.jd.core.v1.model.javasyntax.type.DiamondTypeArgument;
+import org.jd.core.v1.model.javasyntax.type.InnerObjectType;
+import org.jd.core.v1.model.javasyntax.type.ObjectType;
+import org.jd.core.v1.model.javasyntax.type.PrimitiveType;
+import org.jd.core.v1.model.token.BooleanConstantToken;
+import org.jd.core.v1.model.token.CharacterConstantToken;
+import org.jd.core.v1.model.token.EndBlockToken;
+import org.jd.core.v1.model.token.EndMarkerToken;
+import org.jd.core.v1.model.token.KeywordToken;
+import org.jd.core.v1.model.token.NumericConstantToken;
+import org.jd.core.v1.model.token.ReferenceToken;
+import org.jd.core.v1.model.token.StartBlockToken;
+import org.jd.core.v1.model.token.StartMarkerToken;
+import org.jd.core.v1.model.token.StringConstantToken;
+import org.jd.core.v1.model.token.TextToken;
+import org.jd.core.v1.service.converter.classfiletojavasyntax.model.javasyntax.expression.ClassFileMethodInvocationExpression;
 import org.jd.core.v1.service.fragmenter.javasyntaxtojavafragment.util.CharacterUtil;
 import org.jd.core.v1.service.fragmenter.javasyntaxtojavafragment.util.JavaFragmentFactory;
 import org.jd.core.v1.service.fragmenter.javasyntaxtojavafragment.util.StringUtil;
 import org.jd.core.v1.util.DefaultList;
 
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Set;
 
+import static org.apache.bcel.Const.MAJOR_1_7;
 import static org.jd.core.v1.model.javasyntax.type.PrimitiveType.FLAG_BOOLEAN;
 import static org.jd.core.v1.model.javasyntax.type.PrimitiveType.FLAG_CHAR;
 
 public class ExpressionVisitor extends TypeVisitor {
+
+    /*
+     * Binary operators in order for binary search
+     */
+    private static final String[] BIN_OPS = {"&", "&=", "^", "^=", "|", "|="};
+
     public static final KeywordToken CLASS = new KeywordToken("class");
     public static final KeywordToken FALSE = new KeywordToken("false");
     public static final KeywordToken INSTANCEOF = new KeywordToken("instanceof");
@@ -43,23 +111,38 @@ public class ExpressionVisitor extends TypeVisitor {
 
     protected static final int UNKNOWN_LINE_NUMBER = Printer.UNKNOWN_LINE_NUMBER;
 
-    protected LinkedList<Context> contextStack = new LinkedList<>();
+    protected final LinkedList<Context> contextStack = new LinkedList<>();
     protected Fragments fragments = new Fragments();
-    protected boolean diamondOperatorSupported;
-    protected boolean inExpressionFlag = false;
-    protected HashSet<String> currentMethodParamNames = new HashSet<>();
+    protected boolean inExpressionFlag;
+    protected boolean inInvokeNewFlag;
+    protected boolean inVarArgMethod;
+    protected boolean inVarArgParam;
+    protected int parameterTypeCount;
+    protected Set<String> currentMethodParamNames = new HashSet<>();
     protected String currentTypeName;
-    protected HexaExpressionVisitor hexaExpressionVisitor = new HexaExpressionVisitor();
+    protected String currentMethodName;
+    private final HexaExpressionVisitor hexaExpressionVisitor = new HexaExpressionVisitor();
+    private final int majorVersion;
+
 
     public ExpressionVisitor(Loader loader, String mainInternalTypeName, int majorVersion, ImportsFragment importsFragment) {
         super(loader, mainInternalTypeName, majorVersion, importsFragment);
-        this.diamondOperatorSupported = (majorVersion >= 51); // (majorVersion >= Java 7)
+        this.majorVersion = majorVersion;
     }
 
     public DefaultList<Fragment> getFragments() {
         return fragments;
     }
+    
+    public String getCurrentTypeInternalName() {
+        return currentType == null ? null : currentType.getInternalName();
+    }
 
+    @Override
+    protected boolean isInInvokeNew() {
+        return inInvokeNewFlag;
+    }
+    
     @Override
     public void visit(ArrayExpression expression) {
         visit(expression, expression.getExpression());
@@ -70,31 +153,35 @@ public class ExpressionVisitor extends TypeVisitor {
 
     @Override
     public void visit(BinaryOperatorExpression expression) {
-        switch (expression.getOperator()) {
-            case "&":
-            case "|":
-            case "^":
-            case "&=":
-            case "|=":
-            case "^=":
-                visitHexa(expression, expression.getLeftExpression());
-                tokens.add(TextToken.SPACE);
-                tokens.add(newTextToken(expression.getOperator()));
-                tokens.add(TextToken.SPACE);
-                visitHexa(expression, expression.getRightExpression());
-                break;
-            default:
-                visit(expression, expression.getLeftExpression());
-                tokens.add(TextToken.SPACE);
-                tokens.add(newTextToken(expression.getOperator()));
-                tokens.add(TextToken.SPACE);
-                visit(expression, expression.getRightExpression());
-                break;
+        if (Arrays.binarySearch(BIN_OPS, expression.getOperator()) >= 0) {
+            visitHexa(expression, expression.getLeftExpression());
+            tokens.add(TextToken.SPACE);
+            tokens.add(newTextToken(expression.getOperator()));
+            tokens.add(TextToken.SPACE);
+            visitHexa(expression, expression.getRightExpression());
+        } else {
+            visit(expression, expression.getLeftExpression());
+            tokens.add(TextToken.SPACE);
+            tokens.add(newTextToken(expression.getOperator()));
+            tokens.add(TextToken.SPACE);
+            visit(expression, expression.getRightExpression(), isParenthesisNeeded(expression));
         }
+    }
+
+    private static boolean isParenthesisNeeded(BinaryOperatorExpression parent) {
+        if (!(parent.getRightExpression() instanceof BinaryOperatorExpression rightChild)) {
+            return false;
+        }
+        return switch (parent.getOperator()) {
+            case "-" -> rightChild.getPriority() == parent.getPriority();
+            case "/", "%" -> true;
+            default -> false;
+        };
     }
 
     @Override
     public void visit(BooleanExpression expression) {
+        tokens.addLineNumberToken(expression);
         if (expression.isTrue()) {
             tokens.add(TRUE);
         } else {
@@ -104,22 +191,28 @@ public class ExpressionVisitor extends TypeVisitor {
 
     @Override
     public void visit(CastExpression expression) {
-        if (expression.isExplicit()) {
-            tokens.addLineNumberToken(expression.getLineNumber());
-            tokens.add(TextToken.LEFTROUNDBRACKET);
+        tokens.addLineNumberToken(expression);
+        tokens.add(TextToken.LEFTROUNDBRACKET);
 
-            BaseType type = expression.getType();
+        BaseType type = expression.getType();
 
-            type.accept(this);
-            tokens.add(TextToken.RIGHTROUNDBRACKET);
+        type.accept(this);
+
+        BaseType intersectType = expression.getIntersectType();
+        if (intersectType != null) {
+            tokens.add(TextToken.SPACE_AND_SPACE);
+            intersectType.accept(this);
         }
+
+        tokens.add(TextToken.RIGHTROUNDBRACKET);
 
         visit(expression, expression.getExpression());
     }
 
-    @Override public void visit(CommentExpression expression) {
+    @Override
+    public void visit(CommentExpression expression) {
         tokens.add(StartMarkerToken.COMMENT);
-        tokens.add(newTextToken(expression.getText()));
+        tokens.add(newTextToken(expression.text()));
         tokens.add(EndMarkerToken.COMMENT);
     }
 
@@ -143,7 +236,7 @@ public class ExpressionVisitor extends TypeVisitor {
         ObjectType ot = expression.getObjectType();
 
         tokens.addLineNumberToken(expression);
-        tokens.add(newTypeReferenceToken(ot, currentInternalTypeName));
+        tokens.add(newTypeReferenceToken(ot, currentType));
         tokens.add(TextToken.COLON_COLON);
         //tokens.add(new ReferenceToken(ReferenceToken.CONSTRUCTOR, ot.getInternalName(), "new", expression.getDescriptor(), currentInternalTypeName));
         tokens.add(NEW);
@@ -161,31 +254,41 @@ public class ExpressionVisitor extends TypeVisitor {
 
         ObjectType type = expression.getObjectType();
 
-        tokens.add(new ReferenceToken(ReferenceToken.FIELD, type.getInternalName(), expression.getName(), type.getDescriptor(), currentInternalTypeName));
+        tokens.add(new ReferenceToken(Printer.FIELD, type.getInternalName(), expression.getName(), type.getDescriptor(), currentType));
     }
 
     @Override
-    @SuppressWarnings("unchecked")
     public void visit(Expressions list) {
         if (list != null) {
             int size = list.size();
 
             if (size > 0) {
                 boolean ief = inExpressionFlag;
+                boolean ivapf = inVarArgParam;
                 Iterator<Expression> iterator = list.iterator();
 
                 while (size-- > 1) {
                     inExpressionFlag = true;
+                    inVarArgParam = inVarArgMethod && list.size() - size >= parameterTypeCount;
+                    if (size == 1 && list.getLast() instanceof NewArray) {
+                        NewArray newArray = (NewArray) list.getLast();
+                        if (newArray.isEmptyNewArray()) {
+                            inExpressionFlag = false;
+                        }
+                    }
                     iterator.next().accept(this);
-
+                    inVarArgParam = ivapf;
+                    
                     if (!tokens.isEmpty()) {
                         tokens.add(TextToken.COMMA_SPACE);
                     }
                 }
 
                 inExpressionFlag = false;
+                inVarArgParam = inVarArgMethod && list.size() - size >= parameterTypeCount;
                 iterator.next().accept(this);
                 inExpressionFlag = ief;
+                inVarArgParam = ivapf;
             }
         }
     }
@@ -200,6 +303,12 @@ public class ExpressionVisitor extends TypeVisitor {
 
             int delta = tokens.size();
 
+            if ("this".equals(expression.getName()) && expression.getExpression() instanceof ObjectTypeReferenceExpression && expression.getExpression().getObjectType() instanceof InnerObjectType) {
+                InnerObjectType innerObjectType = (InnerObjectType) expression.getExpression().getObjectType();
+                InnerObjectType newObjectType = (InnerObjectType) innerObjectType.createType(innerObjectType.getTypeArguments());
+                newObjectType.setOuterType(null);
+                expression.setExpression(new ObjectTypeReferenceExpression(newObjectType));
+            }
             visit(expression, expression.getExpression());
             delta -= tokens.size();
             tokens.addLineNumberToken(expression);
@@ -208,7 +317,7 @@ public class ExpressionVisitor extends TypeVisitor {
                 tokens.add(TextToken.DOT);
             }
 
-            tokens.add(new ReferenceToken(ReferenceToken.FIELD, expression.getInternalTypeName(), expression.getName(), expression.getDescriptor(), currentInternalTypeName));
+            tokens.add(new ReferenceToken(Printer.FIELD, expression.getInternalTypeName(), expression.getName(), expression.getDescriptor(), currentType));
         }
     }
 
@@ -226,7 +335,7 @@ public class ExpressionVisitor extends TypeVisitor {
 
         switch (pt.getJavaPrimitiveFlags()) {
             case FLAG_CHAR:
-                tokens.add(new CharacterConstantToken(CharacterUtil.escapeChar((char)expression.getIntegerValue()), currentInternalTypeName));
+                tokens.add(new CharacterConstantToken(CharacterUtil.escapeChar((char)expression.getIntegerValue()), getCurrentTypeInternalName()));
                 break;
             case FLAG_BOOLEAN:
                 tokens.add(new BooleanConstantToken(expression.getIntegerValue() != 0));
@@ -366,46 +475,60 @@ public class ExpressionVisitor extends TypeVisitor {
         BaseExpression parameters = expression.getParameters();
         boolean dot = false;
 
-        if (exp.isThisExpression()) {
-            // Nothing to do : do not print 'this.method(...)'
-        } else if (exp.isObjectTypeReferenceExpression()) {
-            ObjectType ot = exp.getObjectType();
+        if (!exp.isThisExpression()) {
+            if (exp.isObjectTypeReferenceExpression()) {
+                ObjectType ot = exp.getObjectType();
 
-            if (! ot.getInternalName().equals(currentInternalTypeName)) {
-                visit(expression, exp);
-                tokens.addLineNumberToken(expression);
+                if (expression.getNonWildcardTypeArguments() != null || !ot.getInternalName().equals(getCurrentTypeInternalName())) {
+                    visit(expression, exp);
+                    tokens.addLineNumberToken(expression);
+                    tokens.add(TextToken.DOT);
+                    dot = true;
+                }
+            } else {
+                if (exp.isFieldReferenceExpression() || exp.isLocalVariableReferenceExpression()) {
+                    tokens.addLineNumberToken(expression);
+                    visit(expression, exp);
+                } else {
+                    if (exp instanceof NewExpression) {
+                        NewExpression newExpression = (NewExpression) exp;
+                        newExpression.setDiamondPossible(false);
+                    }
+                    visit(expression, exp);
+                    tokens.addLineNumberToken(expression);
+                }
+
                 tokens.add(TextToken.DOT);
                 dot = true;
             }
-        } else {
-            if (exp.isFieldReferenceExpression() || exp.isLocalVariableReferenceExpression()) {
-                tokens.addLineNumberToken(expression);
-                visit(expression, exp);
-            } else {
-                visit(expression, exp);
-                tokens.addLineNumberToken(expression);
-            }
-
-            tokens.add(TextToken.DOT);
-            dot = true;
         }
 
         tokens.addLineNumberToken(expression);
 
-        if ((nonWildcardTypeArguments != null) && dot) {
+        if (nonWildcardTypeArguments != null && dot) {
             tokens.add(TextToken.LEFTANGLEBRACKET);
             nonWildcardTypeArguments.accept(this);
             tokens.add(TextToken.RIGHTANGLEBRACKET);
         }
 
-        tokens.add(new ReferenceToken(ReferenceToken.METHOD, expression.getInternalTypeName(), expression.getName(), expression.getDescriptor(), currentInternalTypeName));
+        tokens.add(new ReferenceToken(Printer.METHOD, expression.getInternalTypeName(), expression.getName(), expression.getDescriptor(), currentType));
         tokens.add(StartBlockToken.START_PARAMETERS_BLOCK);
 
         if (parameters != null) {
             boolean ief = inExpressionFlag;
+            boolean ivmf = inVarArgMethod;
+            boolean ivpf = inVarArgParam;
             inExpressionFlag = false;
+            inVarArgMethod = expression.isVarArgs() && !expression.getName().equals(currentMethodName);
+            if (expression instanceof ClassFileMethodInvocationExpression) {
+                ClassFileMethodInvocationExpression mie = (ClassFileMethodInvocationExpression) expression;
+                parameterTypeCount = mie.getParameterTypes() == null ? 0 : mie.getParameterTypes().size();
+            }
+            inVarArgParam = inVarArgMethod && parameters.size() == 1;
             parameters.accept(this);
             inExpressionFlag = ief;
+            inVarArgMethod = ivmf;
+            inVarArgParam = ivpf;
         }
 
         tokens.add(EndBlockToken.END_PARAMETERS_BLOCK);
@@ -413,15 +536,26 @@ public class ExpressionVisitor extends TypeVisitor {
 
     @Override
     public void visit(MethodReferenceExpression expression) {
+        if (expression.getExpression().isCastExpression()) {
+            tokens.add(TextToken.LEFTROUNDBRACKET);
+        }
         expression.getExpression().accept(this);
+        if (expression.getExpression().isCastExpression()) {
+            tokens.add(TextToken.RIGHTROUNDBRACKET);
+        }
         tokens.addLineNumberToken(expression);
         tokens.add(TextToken.COLON_COLON);
-        tokens.add(new ReferenceToken(ReferenceToken.METHOD, expression.getInternalTypeName(), expression.getName(), expression.getDescriptor(), currentInternalTypeName));
+        tokens.add(new ReferenceToken(Printer.METHOD, expression.getInternalTypeName(), expression.getName(), expression.getDescriptor(), currentType));
     }
 
     @Override
-    @SuppressWarnings("unchecked")
     public void visit(NewArray expression) {
+        if (inVarArgParam && expression.isEmptyNewArray()) {
+            if (!tokens.isEmpty() && TextToken.COMMA_SPACE.equals(tokens.get(tokens.size() - 1))) {
+                tokens.remove(tokens.size() - 1);
+            }
+            return;
+        }
         tokens.addLineNumberToken(expression);
         tokens.add(NEW);
         tokens.add(TextToken.SPACE);
@@ -461,33 +595,62 @@ public class ExpressionVisitor extends TypeVisitor {
     @Override
     public void visit(NewInitializedArray expression) {
         tokens.addLineNumberToken(expression);
-        tokens.add(NEW);
-        tokens.add(TextToken.SPACE);
-
-        BaseType type = expression.getType();
-
-        type.accept(this);
-        tokens.add(TextToken.SPACE);
-        expression.getArrayInitializer().accept(this);
+        if (inVarArgParam && expression.getArrayInitializer() != null) {
+            ArrayVariableInitializer arrayInitializer = expression.getArrayInitializer();
+            if (arrayInitializer.isList()) {
+                Iterator<VariableInitializer> iterator = arrayInitializer.getList().iterator();
+                while (iterator.hasNext()) {
+                    safeAccept(iterator.next());
+                    if (iterator.hasNext()) {
+                        tokens.add(TextToken.COMMA_SPACE);
+                    }
+                }
+            } else {
+                safeAccept(arrayInitializer.getFirst());
+            }
+        } else {
+            tokens.add(NEW);
+            tokens.add(TextToken.SPACE);
+    
+            BaseType type = expression.getType();
+    
+            type.accept(this);
+            tokens.add(TextToken.SPACE);
+            expression.getArrayInitializer().accept(this);
+        }
     }
 
     @Override
     public void visit(NewExpression expression) {
+        inInvokeNewFlag = true;
         BodyDeclaration bodyDeclaration = expression.getBodyDeclaration();
 
         tokens.addLineNumberToken(expression);
+        if (expression.getQualifier() != null) {
+            expression.getQualifier().accept(this);
+            tokens.add(TextToken.DOT);
+        }
         tokens.add(NEW);
         tokens.add(TextToken.SPACE);
 
         ObjectType objectType = expression.getObjectType();
 
-        if ((objectType.getTypeArguments() != null) && (bodyDeclaration == null) && diamondOperatorSupported) {
+        if (objectType.getTypeArguments() != null && expression.isDiamondPossible() && majorVersion >= MAJOR_1_7) {
             objectType = objectType.createType(DiamondTypeArgument.DIAMOND);
         }
 
+        if (objectType instanceof InnerObjectType && expression.getQualifier() != null) {
+            InnerObjectType innerObjectType = (InnerObjectType) objectType;
+            InnerObjectType newObjectType = (InnerObjectType) innerObjectType.createType(innerObjectType.getTypeArguments());
+            newObjectType.setOuterType(null);
+            expression.setObjectType(newObjectType);
+            objectType = expression.getObjectType();
+        }
+        
         BaseType type = objectType;
 
         type.accept(this);
+
         tokens.add(StartBlockToken.START_PARAMETERS_BLOCK);
 
         BaseExpression parameters = expression.getParameters();
@@ -504,7 +667,7 @@ public class ExpressionVisitor extends TypeVisitor {
             ObjectType ot = expression.getObjectType();
 
             storeContext();
-            currentInternalTypeName = bodyDeclaration.getInternalTypeName();
+            currentType = typeMaker.makeFromInternalTypeName(bodyDeclaration.getInternalTypeName());
             currentTypeName = ot.getName();
             bodyDeclaration.accept(this);
 
@@ -522,6 +685,7 @@ public class ExpressionVisitor extends TypeVisitor {
 
             tokens = new Tokens();
         }
+        inInvokeNewFlag = false;
     }
 
     @Override
@@ -564,7 +728,7 @@ public class ExpressionVisitor extends TypeVisitor {
     @Override
     public void visit(StringConstantExpression expression) {
         tokens.addLineNumberToken(expression);
-        tokens.add(new StringConstantToken(StringUtil.escapeString(expression.getStringValue()), currentInternalTypeName));
+        tokens.add(new StringConstantToken(StringUtil.escapeString(expression.getStringValue()), getCurrentTypeInternalName()));
     }
 
     @Override
@@ -589,6 +753,15 @@ public class ExpressionVisitor extends TypeVisitor {
     }
 
     @Override
+    public void visit(QualifiedSuperExpression expression) {
+        tokens.addLineNumberToken(expression);
+        ObjectType qualifierType = expression.getType();
+        tokens.add(newTypeReferenceToken(qualifierType, qualifierType));
+        tokens.add(TextToken.DOT);
+        tokens.add(SUPER);
+    }
+    
+    @Override
     public void visit(TernaryOperatorExpression expression) {
         tokens.addLineNumberToken(expression.getCondition());
 
@@ -608,6 +781,16 @@ public class ExpressionVisitor extends TypeVisitor {
             }
         }
 
+        if (expression.getTrueExpression() instanceof NewExpression) {
+            NewExpression newExpression = (NewExpression) expression.getTrueExpression();
+            newExpression.setDiamondPossible(newExpression.isDiamondPossible() && majorVersion > MAJOR_1_7);
+        }
+        
+        if (expression.getFalseExpression() instanceof NewExpression) {
+            NewExpression newExpression = (NewExpression) expression.getFalseExpression();
+            newExpression.setDiamondPossible(newExpression.isDiamondPossible() && majorVersion > MAJOR_1_7);
+        }
+        
         printTernaryOperatorExpression(expression.getCondition());
         tokens.add(TextToken.SPACE_QUESTION_SPACE);
         printTernaryOperatorExpression(expression.getTrueExpression());
@@ -621,6 +804,7 @@ public class ExpressionVisitor extends TypeVisitor {
             expression.accept(this);
             tokens.add(TextToken.RIGHTROUNDBRACKET);
         } else {
+            inVarArgParam = false; // cannot use varargs in ternary op
             expression.accept(this);
         }
     }
@@ -645,18 +829,23 @@ public class ExpressionVisitor extends TypeVisitor {
     }
 
     protected void storeContext() {
-        contextStack.add(new Context(currentInternalTypeName, currentTypeName, currentMethodParamNames));
+        contextStack.add(new Context(currentType, currentTypeName, currentMethodName, currentMethodParamNames));
     }
 
     protected void restoreContext() {
         Context currentContext = contextStack.removeLast();
-        currentInternalTypeName = currentContext.currentInternalTypeName;
+        currentType = currentContext.currentType;
         currentTypeName = currentContext.currentTypeName;
+        currentMethodName = currentContext.currentMethodName;
         currentMethodParamNames = currentContext.currentMethodParamNames;
     }
 
     protected void visit(Expression parent, Expression child) {
-        if ((parent.getPriority() < child.getPriority()) || ((parent.getPriority() == 14) && (child.getPriority() == 13))) {
+        visit(parent, child, false);
+    }
+
+    protected void visit(Expression parent, Expression child, boolean alwaysUseParenthesis) {
+        if (parent.getPriority() < child.getPriority() || parent.getPriority() == 14 && child.getPriority() == 13 || alwaysUseParenthesis) {
             tokens.add(TextToken.LEFTROUNDBRACKET);
             child.accept(this);
             tokens.add(TextToken.RIGHTROUNDBRACKET);
@@ -666,7 +855,7 @@ public class ExpressionVisitor extends TypeVisitor {
     }
 
     protected void visitHexa(Expression parent, Expression child) {
-        if ((parent.getPriority() < child.getPriority()) || ((parent.getPriority() == 14) && (child.getPriority() == 13))) {
+        if (parent.getPriority() < child.getPriority() || parent.getPriority() == 14 && child.getPriority() == 13) {
             tokens.add(TextToken.LEFTROUNDBRACKET);
             child.accept(hexaExpressionVisitor);
             tokens.add(TextToken.RIGHTROUNDBRACKET);
@@ -676,18 +865,22 @@ public class ExpressionVisitor extends TypeVisitor {
     }
 
     protected static class Context {
-        public final String currentInternalTypeName;
-        public final String currentTypeName;
-        public final HashSet<String> currentMethodParamNames;
+        private final ObjectType currentType;
+        private final String currentTypeName;
+        private final String currentMethodName;
+        private final Set<String> currentMethodParamNames;
 
-        public Context(String currentInternalTypeName, String currentTypeName, HashSet<String> currentMethodParamNames) {
-            this.currentInternalTypeName = currentInternalTypeName;
+        public Context(ObjectType currentType, String currentTypeName, String currentMethodName, Set<String> currentMethodParamNames) {
+            this.currentType = currentType;
             this.currentTypeName = currentTypeName;
+            this.currentMethodName = currentMethodName;
             this.currentMethodParamNames = new HashSet<>(currentMethodParamNames);
         }
     }
 
     protected static class Fragments extends DefaultList<Fragment> {
+        private static final long serialVersionUID = 1L;
+
         public void addTokensFragment(Tokens tokens) {
             if (! tokens.isEmpty()) {
                 if (tokens.getCurrentLineNumber() == UNKNOWN_LINE_NUMBER) {
@@ -706,13 +899,10 @@ public class ExpressionVisitor extends TypeVisitor {
 
             PrimitiveType pt = (PrimitiveType)expression.getType();
 
-            switch (pt.getJavaPrimitiveFlags()) {
-                case FLAG_BOOLEAN:
-                    tokens.add(new BooleanConstantToken(expression.getIntegerValue() == 1));
-                    break;
-                default:
-                    tokens.add(new NumericConstantToken("0x" + Integer.toHexString(expression.getIntegerValue()).toUpperCase()));
-                    break;
+            if (pt.getJavaPrimitiveFlags() == FLAG_BOOLEAN) {
+                tokens.add(new BooleanConstantToken(expression.getIntegerValue() == 1));
+            } else {
+                tokens.add(new NumericConstantToken("0x" + Integer.toHexString(expression.getIntegerValue()).toUpperCase()));
             }
         }
 
@@ -722,39 +912,75 @@ public class ExpressionVisitor extends TypeVisitor {
             tokens.add(new NumericConstantToken("0x" + Long.toHexString(expression.getLongValue()).toUpperCase() + 'L'));
         }
 
-        @Override public void visit(ArrayExpression expression) { ExpressionVisitor.this.visit(expression); }
-        @Override public void visit(BinaryOperatorExpression expression) { ExpressionVisitor.this.visit(expression); }
-        @Override public void visit(BooleanExpression expression) { ExpressionVisitor.this.visit(expression); }
-        @Override public void visit(CastExpression expression) { ExpressionVisitor.this.visit(expression); }
-        @Override public void visit(CommentExpression expression) { ExpressionVisitor.this.visit(expression); }
-        @Override public void visit(ConstructorInvocationExpression expression) { ExpressionVisitor.this.visit(expression); }
-        @Override public void visit(ConstructorReferenceExpression expression) { ExpressionVisitor.this.visit(expression); }
-        @Override public void visit(DoubleConstantExpression expression) { ExpressionVisitor.this.visit(expression); }
-        @Override public void visit(EnumConstantReferenceExpression expression) { ExpressionVisitor.this.visit(expression); }
-        @Override public void visit(Expressions expression) { ExpressionVisitor.this.visit(expression); }
-        @Override public void visit(FieldReferenceExpression expression) { ExpressionVisitor.this.visit(expression); }
-        @Override public void visit(FloatConstantExpression expression) { ExpressionVisitor.this.visit(expression); }
-        @Override public void visit(InstanceOfExpression expression) { ExpressionVisitor.this.visit(expression); }
-        @Override public void visit(LambdaFormalParametersExpression expression) { ExpressionVisitor.this.visit(expression); }
-        @Override public void visit(LambdaIdentifiersExpression expression) { ExpressionVisitor.this.visit(expression); }
-        @Override public void visit(LengthExpression expression) { ExpressionVisitor.this.visit(expression); }
-        @Override public void visit(LocalVariableReferenceExpression expression) { ExpressionVisitor.this.visit(expression); }
-        @Override public void visit(MethodInvocationExpression expression) { ExpressionVisitor.this.visit(expression); }
-        @Override public void visit(MethodReferenceExpression expression) { ExpressionVisitor.this.visit(expression); }
-        @Override public void visit(NewArray expression) { ExpressionVisitor.this.visit(expression); }
-        @Override public void visit(NewExpression expression) { ExpressionVisitor.this.visit(expression); }
-        @Override public void visit(NewInitializedArray expression) { ExpressionVisitor.this.visit(expression); }
-        @Override public void visit(NoExpression expression) {}
-        @Override public void visit(NullExpression expression) { ExpressionVisitor.this.visit(expression); }
-        @Override public void visit(ObjectTypeReferenceExpression expression) { ExpressionVisitor.this.visit(expression); }
-        @Override public void visit(ParenthesesExpression expression) { ExpressionVisitor.this.visit(expression); }
-        @Override public void visit(PostOperatorExpression expression) { ExpressionVisitor.this.visit(expression); }
-        @Override public void visit(PreOperatorExpression expression) { ExpressionVisitor.this.visit(expression); }
-        @Override public void visit(StringConstantExpression expression) { ExpressionVisitor.this.visit(expression); }
-        @Override public void visit(SuperConstructorInvocationExpression expression) { ExpressionVisitor.this.visit(expression); }
-        @Override public void visit(SuperExpression expression) { ExpressionVisitor.this.visit(expression); }
-        @Override public void visit(TernaryOperatorExpression expression) { ExpressionVisitor.this.visit(expression); }
-        @Override public void visit(ThisExpression expression) { ExpressionVisitor.this.visit(expression); }
-        @Override public void visit(TypeReferenceDotClassExpression expression) { ExpressionVisitor.this.visit(expression); }
+        @Override
+        public void visit(ArrayExpression expression) { ExpressionVisitor.this.visit(expression); }
+        @Override
+        public void visit(BinaryOperatorExpression expression) { ExpressionVisitor.this.visit(expression); }
+        @Override
+        public void visit(BooleanExpression expression) { ExpressionVisitor.this.visit(expression); }
+        @Override
+        public void visit(CastExpression expression) { ExpressionVisitor.this.visit(expression); }
+        @Override
+        public void visit(CommentExpression expression) { ExpressionVisitor.this.visit(expression); }
+        @Override
+        public void visit(ConstructorInvocationExpression expression) { ExpressionVisitor.this.visit(expression); }
+        @Override
+        public void visit(ConstructorReferenceExpression expression) { ExpressionVisitor.this.visit(expression); }
+        @Override
+        public void visit(DoubleConstantExpression expression) { ExpressionVisitor.this.visit(expression); }
+        @Override
+        public void visit(EnumConstantReferenceExpression expression) { ExpressionVisitor.this.visit(expression); }
+        @Override
+        public void visit(Expressions expression) { ExpressionVisitor.this.visit(expression); }
+        @Override
+        public void visit(FieldReferenceExpression expression) { ExpressionVisitor.this.visit(expression); }
+        @Override
+        public void visit(FloatConstantExpression expression) { ExpressionVisitor.this.visit(expression); }
+        @Override
+        public void visit(InstanceOfExpression expression) { ExpressionVisitor.this.visit(expression); }
+        @Override
+        public void visit(LambdaFormalParametersExpression expression) { ExpressionVisitor.this.visit(expression); }
+        @Override
+        public void visit(LambdaIdentifiersExpression expression) { ExpressionVisitor.this.visit(expression); }
+        @Override
+        public void visit(LengthExpression expression) { ExpressionVisitor.this.visit(expression); }
+        @Override
+        public void visit(LocalVariableReferenceExpression expression) { ExpressionVisitor.this.visit(expression); }
+        @Override
+        public void visit(MethodInvocationExpression expression) { ExpressionVisitor.this.visit(expression); }
+        @Override
+        public void visit(MethodReferenceExpression expression) { ExpressionVisitor.this.visit(expression); }
+        @Override
+        public void visit(NewArray expression) { ExpressionVisitor.this.visit(expression); }
+        @Override
+        public void visit(NewExpression expression) { ExpressionVisitor.this.visit(expression); }
+        @Override
+        public void visit(NewInitializedArray expression) { ExpressionVisitor.this.visit(expression); }
+        @Override
+        public void visit(NoExpression expression) {}
+        @Override
+        public void visit(NullExpression expression) { ExpressionVisitor.this.visit(expression); }
+        @Override
+        public void visit(ObjectTypeReferenceExpression expression) { ExpressionVisitor.this.visit(expression); }
+        @Override
+        public void visit(ParenthesesExpression expression) { ExpressionVisitor.this.visit(expression); }
+        @Override
+        public void visit(PostOperatorExpression expression) { ExpressionVisitor.this.visit(expression); }
+        @Override
+        public void visit(PreOperatorExpression expression) { ExpressionVisitor.this.visit(expression); }
+        @Override
+        public void visit(QualifiedSuperExpression expression) { ExpressionVisitor.this.visit(expression); }
+        @Override
+        public void visit(StringConstantExpression expression) { ExpressionVisitor.this.visit(expression); }
+        @Override
+        public void visit(SuperConstructorInvocationExpression expression) { ExpressionVisitor.this.visit(expression); }
+        @Override
+        public void visit(SuperExpression expression) { ExpressionVisitor.this.visit(expression); }
+        @Override
+        public void visit(TernaryOperatorExpression expression) { ExpressionVisitor.this.visit(expression); }
+        @Override
+        public void visit(ThisExpression expression) { ExpressionVisitor.this.visit(expression); }
+        @Override
+        public void visit(TypeReferenceDotClassExpression expression) { ExpressionVisitor.this.visit(expression); }
     }
 }

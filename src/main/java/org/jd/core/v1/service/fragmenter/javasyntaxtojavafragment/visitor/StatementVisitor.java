@@ -4,7 +4,6 @@
  * This is a Copyleft license that gives the user the right to use,
  * copy and modify the code freely for non-commercial purposes.
  */
-
 package org.jd.core.v1.service.fragmenter.javasyntaxtojavafragment.visitor;
 
 import org.jd.core.v1.api.loader.Loader;
@@ -13,9 +12,38 @@ import org.jd.core.v1.model.javafragment.StartSingleStatementBlockFragment;
 import org.jd.core.v1.model.javafragment.StartStatementsBlockFragment;
 import org.jd.core.v1.model.javafragment.TokensFragment;
 import org.jd.core.v1.model.javasyntax.expression.Expression;
-import org.jd.core.v1.model.javasyntax.statement.*;
+import org.jd.core.v1.model.javasyntax.statement.AssertStatement;
+import org.jd.core.v1.model.javasyntax.statement.BaseStatement;
+import org.jd.core.v1.model.javasyntax.statement.BreakStatement;
+import org.jd.core.v1.model.javasyntax.statement.CommentStatement;
+import org.jd.core.v1.model.javasyntax.statement.ContinueStatement;
+import org.jd.core.v1.model.javasyntax.statement.DoWhileStatement;
+import org.jd.core.v1.model.javasyntax.statement.ExpressionStatement;
+import org.jd.core.v1.model.javasyntax.statement.ForEachStatement;
+import org.jd.core.v1.model.javasyntax.statement.ForStatement;
+import org.jd.core.v1.model.javasyntax.statement.IfElseStatement;
+import org.jd.core.v1.model.javasyntax.statement.IfStatement;
+import org.jd.core.v1.model.javasyntax.statement.LabelStatement;
+import org.jd.core.v1.model.javasyntax.statement.LambdaExpressionStatement;
+import org.jd.core.v1.model.javasyntax.statement.LocalVariableDeclarationStatement;
+import org.jd.core.v1.model.javasyntax.statement.ReturnExpressionStatement;
+import org.jd.core.v1.model.javasyntax.statement.ReturnStatement;
+import org.jd.core.v1.model.javasyntax.statement.Statement;
+import org.jd.core.v1.model.javasyntax.statement.Statements;
+import org.jd.core.v1.model.javasyntax.statement.SwitchStatement;
+import org.jd.core.v1.model.javasyntax.statement.SynchronizedStatement;
+import org.jd.core.v1.model.javasyntax.statement.ThrowStatement;
+import org.jd.core.v1.model.javasyntax.statement.TryStatement;
+import org.jd.core.v1.model.javasyntax.statement.TypeDeclarationStatement;
+import org.jd.core.v1.model.javasyntax.statement.WhileStatement;
 import org.jd.core.v1.model.javasyntax.type.BaseType;
-import org.jd.core.v1.model.token.*;
+import org.jd.core.v1.model.token.EndBlockToken;
+import org.jd.core.v1.model.token.EndMarkerToken;
+import org.jd.core.v1.model.token.KeywordToken;
+import org.jd.core.v1.model.token.NewLineToken;
+import org.jd.core.v1.model.token.StartBlockToken;
+import org.jd.core.v1.model.token.StartMarkerToken;
+import org.jd.core.v1.model.token.TextToken;
 import org.jd.core.v1.service.fragmenter.javasyntaxtojavafragment.util.JavaFragmentFactory;
 
 import java.util.Iterator;
@@ -29,7 +57,6 @@ public class StatementVisitor extends ExpressionVisitor {
     public static final KeywordToken CATCH = new KeywordToken("catch");
     public static final KeywordToken CONTINUE = new KeywordToken("continue");
     public static final KeywordToken DEFAULT = new KeywordToken("default");
-    public static final KeywordToken DO = new KeywordToken("do");
     public static final KeywordToken ELSE = new KeywordToken("else");
     public static final KeywordToken FINAL = new KeywordToken("final");
     public static final KeywordToken FINALLY = new KeywordToken("finally");
@@ -72,6 +99,7 @@ public class StatementVisitor extends ExpressionVisitor {
     @Override
     public void visit(BreakStatement statement) {
         tokens = new Tokens();
+        tokens.addLineNumberToken(statement.getLineNumber());
         tokens.add(BREAK);
 
         if (statement.getLabel() != null) {
@@ -83,11 +111,8 @@ public class StatementVisitor extends ExpressionVisitor {
         fragments.addTokensFragment(tokens);
     }
 
-    @Override public void visit(ByteCodeStatement statement) {
-        visitComment(statement.getText());
-    }
-
-    @Override public void visit(CommentStatement statement) {
+    @Override
+    public void visit(CommentStatement statement) {
         visitComment(statement.getText());
     }
 
@@ -146,7 +171,7 @@ public class StatementVisitor extends ExpressionVisitor {
         tokens = new Tokens();
         tokens.add(StartBlockToken.START_DECLARATION_OR_STATEMENT_BLOCK);
 
-        statement.getExpression().accept(this);
+        safeAccept(statement.getExpression());
 
         tokens.add(TextToken.SEMICOLON);
         tokens.add(EndBlockToken.END_DECLARATION_OR_STATEMENT_BLOCK);
@@ -187,6 +212,11 @@ public class StatementVisitor extends ExpressionVisitor {
         tokens.add(TextToken.SPACE);
         tokens.add(StartBlockToken.START_PARAMETERS_BLOCK);
 
+        if (statement.isFinal()) {
+            tokens.add(StatementVisitor.FINAL);
+            tokens.add(TextToken.SPACE);
+        }
+        
         BaseType type = statement.getType();
 
         type.accept(this);
@@ -295,10 +325,8 @@ public class StatementVisitor extends ExpressionVisitor {
     protected void visitElseStatements(BaseStatement elseStatements, StartStatementsBlockFragment.Group group) {
         BaseStatement statementList = elseStatements;
 
-        if (elseStatements.isList()) {
-            if (elseStatements.size() == 1) {
-                statementList = elseStatements.getFirst();
-            }
+        if (elseStatements.isList() && elseStatements.size() == 1) {
+            statementList = elseStatements.getFirst();
         }
 
         tokens = new Tokens();
@@ -319,29 +347,28 @@ public class StatementVisitor extends ExpressionVisitor {
             statementList.getStatements().accept(this);
             JavaFragmentFactory.addEndStatementsBlock(fragments, group);
             visitElseStatements(statementList.getElseStatements(), group);
-        } else if (statementList.isIfStatement()) {
-            tokens.add(TextToken.SPACE);
-            tokens.add(IF);
-            tokens.add(TextToken.SPACE);
-            tokens.add(StartBlockToken.START_PARAMETERS_BLOCK);
-
-            statementList.getCondition().accept(this);
-
-            tokens.add(EndBlockToken.END_PARAMETERS_BLOCK);
-            fragments.addTokensFragment(tokens);
-
-            JavaFragmentFactory.addStartStatementsBlock(fragments, group);
-
-            statementList.getStatements().accept(this);
-
-            JavaFragmentFactory.addEndStatementsBlock(fragments, group);
         } else {
-            fragments.addTokensFragment(tokens);
+            if (statementList.isIfStatement()) {
+                tokens.add(TextToken.SPACE);
+                tokens.add(IF);
+                tokens.add(TextToken.SPACE);
+                tokens.add(StartBlockToken.START_PARAMETERS_BLOCK);
 
-            JavaFragmentFactory.addStartStatementsBlock(fragments, group);
+                statementList.getCondition().accept(this);
 
-            elseStatements.accept(this);
+                tokens.add(EndBlockToken.END_PARAMETERS_BLOCK);
+                fragments.addTokensFragment(tokens);
 
+                JavaFragmentFactory.addStartStatementsBlock(fragments, group);
+
+                statementList.getStatements().accept(this);
+            } else {
+                fragments.addTokensFragment(tokens);
+
+                JavaFragmentFactory.addStartStatementsBlock(fragments, group);
+
+                elseStatements.accept(this);
+            }
             JavaFragmentFactory.addEndStatementsBlock(fragments, group);
         }
     }
@@ -349,15 +376,15 @@ public class StatementVisitor extends ExpressionVisitor {
     @Override
     public void visit(LabelStatement statement) {
         tokens = new Tokens();
-        tokens.add(newTextToken(statement.getLabel()));
+        tokens.add(newTextToken(statement.label()));
         tokens.add(TextToken.COLON);
 
-        if (statement.getStatement() == null) {
+        if (statement.statement() == null) {
             fragments.addTokensFragment(tokens);
         } else {
             tokens.add(TextToken.SPACE);
             fragments.addTokensFragment(tokens);
-            statement.getStatement().accept(this);
+            statement.statement().accept(this);
         }
     }
 
@@ -410,7 +437,6 @@ public class StatementVisitor extends ExpressionVisitor {
     }
 
     @Override
-    @SuppressWarnings("unchecked")
     public void visit(Statements list) {
         int size = list.size();
 
@@ -589,19 +615,28 @@ public class StatementVisitor extends ExpressionVisitor {
     }
 
     protected void visitTryStatement(TryStatement statement, StartStatementsBlockFragment.Group group) {
-        int fragmentCount1 = fragments.size(), fragmentCount2 = fragmentCount1;
+        int fragmentCount1 = fragments.size();
+        int fragmentCount2 = fragmentCount1;
 
         statement.getTryStatements().accept(this);
 
         if (statement.getCatchClauses() != null) {
+            BaseType type;
+            int lineNumber;
             for (TryStatement.CatchClause cc : statement.getCatchClauses()) {
                 JavaFragmentFactory.addEndStatementsBlock(fragments, group);
 
-                BaseType type = cc.getType();
+                type = cc.getType();
 
                 tokens = new Tokens();
                 tokens.add(CATCH);
                 tokens.add(TextToken.SPACE_LEFTROUNDBRACKET);
+                
+                if (cc.isFinal()) {
+                    tokens.add(StatementVisitor.FINAL);
+                    tokens.add(TextToken.SPACE);
+                }
+                
                 type.accept(this);
 
                 if (cc.getOtherTypes() != null) {
@@ -615,14 +650,12 @@ public class StatementVisitor extends ExpressionVisitor {
                 tokens.add(newTextToken(cc.getName()));
                 tokens.add(TextToken.RIGHTROUNDBRACKET);
 
-                int lineNumber = cc.getLineNumber();
+                lineNumber = cc.getLineNumber();
 
-                if (lineNumber == Expression.UNKNOWN_LINE_NUMBER) {
-                    fragments.addTokensFragment(tokens);
-                } else {
+                if (lineNumber != Expression.UNKNOWN_LINE_NUMBER) {
                     tokens.addLineNumberToken(lineNumber);
-                    fragments.addTokensFragment(tokens);
                 }
+                fragments.addTokensFragment(tokens);
 
                 fragmentCount1 = fragments.size();
                 JavaFragmentFactory.addStartStatementsBlock(fragments, group);
@@ -655,7 +688,7 @@ public class StatementVisitor extends ExpressionVisitor {
 
     @Override
     public void visit(TypeDeclarationStatement statement) {
-        statement.getTypeDeclaration().accept(this);
+        statement.typeDeclaration().accept(this);
         fragments.add(TokensFragment.SEMICOLON);
     }
 

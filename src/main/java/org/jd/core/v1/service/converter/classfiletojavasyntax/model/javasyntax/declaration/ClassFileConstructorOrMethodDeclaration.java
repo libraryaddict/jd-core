@@ -7,8 +7,8 @@
 
 package org.jd.core.v1.service.converter.classfiletojavasyntax.model.javasyntax.declaration;
 
+import org.apache.bcel.classfile.Method;
 import org.jd.core.v1.model.classfile.ClassFile;
-import org.jd.core.v1.model.classfile.Method;
 import org.jd.core.v1.model.javasyntax.declaration.BaseFormalParameter;
 import org.jd.core.v1.model.javasyntax.statement.BaseStatement;
 import org.jd.core.v1.model.javasyntax.type.BaseType;
@@ -32,12 +32,15 @@ public interface ClassFileConstructorOrMethodDeclaration extends ClassFileMember
 
     Type getReturnedType();
 
+    BaseType getExceptionTypes();
+
     ClassFileBodyDeclaration getBodyDeclaration();
 
     Map<String, TypeArgument> getBindings();
 
     Map<String, BaseType> getTypeBounds();
 
+    BaseFormalParameter getFormalParameters();
     void setFormalParameters(BaseFormalParameter formalParameters);
 
     BaseStatement getStatements();

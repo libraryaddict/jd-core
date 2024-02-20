@@ -10,8 +10,7 @@ package org.jd.core.v1.service.layouter;
 import org.jd.core.v1.model.fragment.FixedFragment;
 import org.jd.core.v1.model.fragment.FlexibleFragment;
 import org.jd.core.v1.model.fragment.Fragment;
-import org.jd.core.v1.model.message.Message;
-import org.jd.core.v1.model.processor.Processor;
+import org.jd.core.v1.model.message.DecompileContext;
 import org.jd.core.v1.service.layouter.model.Section;
 import org.jd.core.v1.service.layouter.util.VisitorsHolder;
 import org.jd.core.v1.service.layouter.visitor.BuildSectionsVisitor;
@@ -22,27 +21,23 @@ import java.util.Map;
 
 import static org.jd.core.v1.api.printer.Printer.UNKNOWN_LINE_NUMBER;
 
-
 /**
  * Layout (compact, expend, move) a list of fragments.<br><br>
  *
  * Input:  List<{@link Fragment}><br>
  * Output: List<{@link Fragment}><br>
  */
-public class LayoutFragmentProcessor implements Processor {
+public class LayoutFragmentProcessor {
 
-    @Override
-    public void process(Message message) throws Exception {
-        int maxLineNumber = message.getHeader("maxLineNumber", UNKNOWN_LINE_NUMBER);
-        boolean containsByteCode = message.getHeader("containsByteCode", Boolean.FALSE);
-        boolean showBridgeAndSynthetic = message.getHeader("showBridgeAndSynthetic", Boolean.FALSE);
-        Map<String, Object> configuration = message.getHeader("configuration");
-        Object realignLineNumbersConfiguration = (configuration == null) ? "false" : configuration.get("realignLineNumbers");
-        boolean realignLineNumbers = (realignLineNumbersConfiguration == null) ? false : "true".equals(realignLineNumbersConfiguration.toString());
+    public void process(DecompileContext decompileContext) {
+        int maxLineNumber = decompileContext.getMaxLineNumber();
+        Map<String, Object> configuration = decompileContext.getConfiguration();
+        Object realignLineNumbersConfiguration = configuration == null ? "false" : configuration.get("realignLineNumbers");
+        boolean realignLineNumbers = realignLineNumbersConfiguration != null && "true".equals(realignLineNumbersConfiguration.toString());
 
-        List<Fragment> fragments = message.getBody();
+        List<Fragment> fragments = decompileContext.getBody();
 
-        if ((maxLineNumber != UNKNOWN_LINE_NUMBER) && !containsByteCode && !showBridgeAndSynthetic && realignLineNumbers) {
+        if (maxLineNumber != UNKNOWN_LINE_NUMBER && realignLineNumbers) {
             BuildSectionsVisitor buildSectionsVisitor = new BuildSectionsVisitor();
 
             // Create sections
@@ -82,7 +77,7 @@ public class LayoutFragmentProcessor implements Processor {
                     for (Section section : sections) {
                         changed |= section.layout(false);
                     }
-                    if (changed == false) {
+                    if (!changed) {
                         // Nothing changed -> Quit loop
                         break;
                     }
@@ -108,12 +103,11 @@ public class LayoutFragmentProcessor implements Processor {
                     break;
                 }
 
-                if (sumOfRates > newSumOfRates) {
-                    sumOfRates = newSumOfRates;
-                } else {
+                if (sumOfRates <= newSumOfRates) {
                     // The sum of the constraints does not decrease -> Quit loop
                     break;
                 }
+                sumOfRates = newSumOfRates;
 
                 if (! mostConstrainedSection.releaseConstraints(holder)) {
                     break;

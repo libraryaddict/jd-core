@@ -13,13 +13,14 @@ import org.jd.core.v1.model.javasyntax.statement.ForEachStatement;
 import org.jd.core.v1.service.converter.classfiletojavasyntax.model.localvariable.AbstractLocalVariable;
 
 public class ClassFileForEachStatement extends ForEachStatement {
-    protected AbstractLocalVariable localVariable;
+    private final AbstractLocalVariable localVariable;
 
     public ClassFileForEachStatement(AbstractLocalVariable localVariable, Expression expression, BaseStatement statements) {
         super(localVariable.getType(), null, expression, statements);
         this.localVariable = localVariable;
     }
 
+    @Override
     public String getName() {
         return localVariable.getName();
     }

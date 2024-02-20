@@ -4,6 +4,9 @@
 # JD
 debug*
 
+# VSCode
+.vscode/
+
 # Idea
 .idea/
 out/
@@ -34,3 +37,4 @@ build/
 
 # WinMerge
 *.bak
+/bin/

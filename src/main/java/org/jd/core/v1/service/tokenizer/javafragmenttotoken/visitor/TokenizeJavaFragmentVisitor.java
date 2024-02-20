@@ -4,12 +4,48 @@
  * This is a Copyleft license that gives the user the right to use,
  * copy and modify the code freely for non-commercial purposes.
  */
-
 package org.jd.core.v1.service.tokenizer.javafragmenttotoken.visitor;
 
 import org.jd.core.v1.api.printer.Printer;
-import org.jd.core.v1.model.javafragment.*;
-import org.jd.core.v1.model.token.*;
+import org.jd.core.v1.model.javafragment.EndBlockFragment;
+import org.jd.core.v1.model.javafragment.EndBlockInParameterFragment;
+import org.jd.core.v1.model.javafragment.EndBodyFragment;
+import org.jd.core.v1.model.javafragment.EndBodyInParameterFragment;
+import org.jd.core.v1.model.javafragment.EndMovableJavaBlockFragment;
+import org.jd.core.v1.model.javafragment.EndSingleStatementBlockFragment;
+import org.jd.core.v1.model.javafragment.EndStatementsBlockFragment;
+import org.jd.core.v1.model.javafragment.ImportsFragment;
+import org.jd.core.v1.model.javafragment.ImportsFragment.Import;
+import org.jd.core.v1.model.javafragment.JavaFragmentVisitor;
+import org.jd.core.v1.model.javafragment.LineNumberTokensFragment;
+import org.jd.core.v1.model.javafragment.SpaceSpacerFragment;
+import org.jd.core.v1.model.javafragment.SpacerBetweenMembersFragment;
+import org.jd.core.v1.model.javafragment.SpacerFragment;
+import org.jd.core.v1.model.javafragment.StartBlockFragment;
+import org.jd.core.v1.model.javafragment.StartBodyFragment;
+import org.jd.core.v1.model.javafragment.StartMovableJavaBlockFragment;
+import org.jd.core.v1.model.javafragment.StartSingleStatementBlockFragment;
+import org.jd.core.v1.model.javafragment.StartStatementsBlockFragment;
+import org.jd.core.v1.model.javafragment.StartStatementsDoWhileBlockFragment;
+import org.jd.core.v1.model.javafragment.StartStatementsTryBlockFragment;
+import org.jd.core.v1.model.javafragment.TokensFragment;
+import org.jd.core.v1.model.token.AbstractNopTokenVisitor;
+import org.jd.core.v1.model.token.BooleanConstantToken;
+import org.jd.core.v1.model.token.CharacterConstantToken;
+import org.jd.core.v1.model.token.DeclarationToken;
+import org.jd.core.v1.model.token.EndBlockToken;
+import org.jd.core.v1.model.token.EndMarkerToken;
+import org.jd.core.v1.model.token.KeywordToken;
+import org.jd.core.v1.model.token.LineNumberToken;
+import org.jd.core.v1.model.token.NewLineToken;
+import org.jd.core.v1.model.token.NumericConstantToken;
+import org.jd.core.v1.model.token.ReferenceToken;
+import org.jd.core.v1.model.token.StartBlockToken;
+import org.jd.core.v1.model.token.StartMarkerToken;
+import org.jd.core.v1.model.token.StringConstantToken;
+import org.jd.core.v1.model.token.TextToken;
+import org.jd.core.v1.model.token.Token;
+import org.jd.core.v1.model.token.TokenVisitor;
 import org.jd.core.v1.util.DefaultList;
 
 import java.util.Arrays;
@@ -18,23 +54,17 @@ import java.util.Comparator;
 import java.util.List;
 
 public class TokenizeJavaFragmentVisitor implements JavaFragmentVisitor {
-    protected static final ImportNameComparator NAME_COMPARATOR = new ImportNameComparator();
 
     protected static final KeywordToken DO = new KeywordToken("do");
     protected static final KeywordToken IMPORT = new KeywordToken("import");
-    protected static final KeywordToken FOR = new KeywordToken("for");
-    protected static final KeywordToken TRUE = new KeywordToken("true");
     protected static final KeywordToken TRY = new KeywordToken("try");
-    protected static final KeywordToken WHILE = new KeywordToken("while");
 
     protected static final List<Token> DO_TOKENS = Arrays.asList((Token)DO);
-    protected static final List<Token> EMPTY_FOR_TOKENS = Arrays.asList(FOR, TextToken.INFINITE_FOR);
-    protected static final List<Token> EMPTY_WHILE_TOKENS = Arrays.asList(WHILE, TextToken.SPACE, TextToken.LEFTROUNDBRACKET, TRUE, TextToken.RIGHTROUNDBRACKET);
     protected static final List<Token> TRY_TOKENS = Arrays.asList((Token)TRY);
 
-    protected KnownLineNumberTokenVisitor knownLineNumberTokenVisitor = new KnownLineNumberTokenVisitor();
-    protected UnknownLineNumberTokenVisitor unknownLineNumberTokenVisitor = new UnknownLineNumberTokenVisitor();
-    protected DefaultList<Token> tokens;
+    private final KnownLineNumberTokenVisitor knownLineNumberTokenVisitor = new KnownLineNumberTokenVisitor();
+    private final UnknownLineNumberTokenVisitor unknownLineNumberTokenVisitor = new UnknownLineNumberTokenVisitor();
+    protected final DefaultList<Token> tokens;
 
     public TokenizeJavaFragmentVisitor(int initialCapacity) {
         this.tokens = new DefaultList<>(initialCapacity);
@@ -147,62 +177,50 @@ public class TokenizeJavaFragmentVisitor implements JavaFragmentVisitor {
         }
     }
 
-    @Override public void visit(EndMovableJavaBlockFragment fragment) {}
+    @Override
+    public void visit(EndMovableJavaBlockFragment fragment) {}
 
     @Override
     public void visit(EndSingleStatementBlockFragment fragment) {
         switch (fragment.getLineCount()) {
             case 0:
-                switch (fragment.getStartSingleStatementBlockFragment().getLineCount()) {
-                    case 0:
-                    case 1:
-                        tokens.add(TextToken.SPACE);
-                        tokens.add(EndBlockToken.END_DECLARATION_OR_STATEMENT_BLOCK);
-                        break;
-                    default:
-                        tokens.add(TextToken.SPACE);
-                        tokens.add(EndBlockToken.END_BLOCK);
-                        tokens.add(TextToken.SPACE);
-                        break;
-                }
+            if (fragment.getStartSingleStatementBlockFragment().getLineCount() == 0 || fragment.getStartSingleStatementBlockFragment().getLineCount() == 1) {
+                tokens.add(TextToken.SPACE);
+                tokens.add(EndBlockToken.END_DECLARATION_OR_STATEMENT_BLOCK);
+            } else {
+                tokens.add(TextToken.SPACE);
+                tokens.add(EndBlockToken.END_BLOCK);
+                tokens.add(TextToken.SPACE);
+            }
                 break;
             case 1:
-                switch (fragment.getStartSingleStatementBlockFragment().getLineCount()) {
-                    case 0:
-                        tokens.add(EndBlockToken.END_DECLARATION_OR_STATEMENT_BLOCK);
-                        tokens.add(NewLineToken.NEWLINE_1);
-                        break;
-                    default:
-                        tokens.add(NewLineToken.NEWLINE_1);
-                        tokens.add(EndBlockToken.END_BLOCK);
-                        break;
-                }
+            if (fragment.getStartSingleStatementBlockFragment().getLineCount() == 0) {
+                tokens.add(EndBlockToken.END_DECLARATION_OR_STATEMENT_BLOCK);
+                tokens.add(NewLineToken.NEWLINE_1);
+            } else {
+                tokens.add(NewLineToken.NEWLINE_1);
+                tokens.add(EndBlockToken.END_BLOCK);
+            }
                 break;
             case 2:
-                switch (fragment.getStartSingleStatementBlockFragment().getLineCount()) {
-                    case 0:
-                        tokens.add(EndBlockToken.END_DECLARATION_OR_STATEMENT_BLOCK);
-                        tokens.add(NewLineToken.NEWLINE_2);
-                        break;
-                    default:
-                        tokens.add(NewLineToken.NEWLINE_1);
-                        tokens.add(EndBlockToken.END_BLOCK);
-                        tokens.add(NewLineToken.NEWLINE_1);
-                        break;
-                }
+            if (fragment.getStartSingleStatementBlockFragment().getLineCount() == 0) {
+                tokens.add(EndBlockToken.END_DECLARATION_OR_STATEMENT_BLOCK);
+                tokens.add(NewLineToken.NEWLINE_2);
+            } else {
+                tokens.add(NewLineToken.NEWLINE_1);
+                tokens.add(EndBlockToken.END_BLOCK);
+                tokens.add(NewLineToken.NEWLINE_1);
+            }
                 break;
             default:
-                switch (fragment.getStartSingleStatementBlockFragment().getLineCount()) {
-                    case 0:
-                        tokens.add(EndBlockToken.END_DECLARATION_OR_STATEMENT_BLOCK);
-                        tokens.add(new NewLineToken(fragment.getLineCount()));
-                        break;
-                    default:
-                        tokens.add(NewLineToken.NEWLINE_1);
-                        tokens.add(EndBlockToken.END_BLOCK);
-                        tokens.add(new NewLineToken(fragment.getLineCount()-1));
-                        break;
-                }
+            if (fragment.getStartSingleStatementBlockFragment().getLineCount() == 0) {
+                tokens.add(EndBlockToken.END_DECLARATION_OR_STATEMENT_BLOCK);
+                tokens.add(new NewLineToken(fragment.getLineCount()));
+            } else {
+                tokens.add(NewLineToken.NEWLINE_1);
+                tokens.add(EndBlockToken.END_BLOCK);
+                tokens.add(new NewLineToken(fragment.getLineCount()-1));
+            }
                 break;
         }
     }
@@ -270,14 +288,14 @@ public class TokenizeJavaFragmentVisitor implements JavaFragmentVisitor {
     public void visit(ImportsFragment fragment) {
         List<ImportsFragment.Import> imports = new DefaultList<>(fragment.getImports());
 
-        imports.sort(NAME_COMPARATOR);
+        imports.sort(Comparator.comparing(Import::getQualifiedName));
 
         tokens.add(StartMarkerToken.IMPORT_STATEMENTS);
 
         for (ImportsFragment.Import imp : imports) {
             tokens.add(IMPORT);
             tokens.add(TextToken.SPACE);
-            tokens.add(new ReferenceToken(ReferenceToken.TYPE, imp.getInternalName(), imp.getQualifiedName(), null, null));
+            tokens.add(new ReferenceToken(Printer.TYPE, imp.getInternalName(), imp.getQualifiedName()));
             tokens.add(TextToken.SEMICOLON);
             tokens.add(NewLineToken.NEWLINE_1);
         }
@@ -404,17 +422,13 @@ public class TokenizeJavaFragmentVisitor implements JavaFragmentVisitor {
                 tokens.add(TextToken.SPACE);
                 break;
             case 1:
-                switch (fragment.getEndSingleStatementBlockFragment().getLineCount()) {
-                    case 0:
-                        tokens.add(StartBlockToken.START_DECLARATION_OR_STATEMENT_BLOCK);
-                        tokens.add(NewLineToken.NEWLINE_1);
-                        break;
-                    default:
-                        tokens.add(TextToken.SPACE);
-                        tokens.add(StartBlockToken.START_BLOCK);
-                        tokens.add(NewLineToken.NEWLINE_1);
-                        break;
-                }
+            if (fragment.getEndSingleStatementBlockFragment().getLineCount() == 0) {
+                tokens.add(StartBlockToken.START_DECLARATION_OR_STATEMENT_BLOCK);
+            } else {
+                tokens.add(TextToken.SPACE);
+                tokens.add(StartBlockToken.START_BLOCK);
+            }
+            tokens.add(NewLineToken.NEWLINE_1);
                 break;
             case 2:
                 tokens.add(NewLineToken.NEWLINE_1);
@@ -495,16 +509,6 @@ public class TokenizeJavaFragmentVisitor implements JavaFragmentVisitor {
     }
 
     @Override
-    public void visit(StartStatementsInfiniteForBlockFragment fragment) {
-        visit(fragment, EMPTY_FOR_TOKENS);
-    }
-
-    @Override
-    public void visit(StartStatementsInfiniteWhileBlockFragment fragment) {
-        visit(fragment, EMPTY_WHILE_TOKENS);
-    }
-
-    @Override
     public void visit(StartStatementsTryBlockFragment fragment) {
         visit(fragment, TRY_TOKENS);
     }
@@ -516,15 +520,8 @@ public class TokenizeJavaFragmentVisitor implements JavaFragmentVisitor {
         }
     }
 
-    protected static class ImportNameComparator implements Comparator<ImportsFragment.Import> {
-        @Override
-        public int compare(ImportsFragment.Import tr1, ImportsFragment.Import tr2) {
-            return tr1.getQualifiedName().compareTo(tr2.getQualifiedName());
-        }
-    }
-
     protected class KnownLineNumberTokenVisitor extends AbstractNopTokenVisitor {
-        public int currentLineNumber;
+        private int currentLineNumber;
 
         public void reset(int firstLineNumber) {
             this.currentLineNumber = firstLineNumber;
@@ -532,13 +529,15 @@ public class TokenizeJavaFragmentVisitor implements JavaFragmentVisitor {
 
         @Override
         public void visit(EndBlockToken token) {
-            assert token != EndBlockToken.END_BLOCK : "Unexpected EndBlockToken.END_BLOCK at this step. Uses 'JavaFragmentFactory.addEnd***(fragments)' instead";
+            if (token == EndBlockToken.END_BLOCK) {
+                throw new IllegalArgumentException("Unexpected EndBlockToken.END_BLOCK at this step. Uses 'JavaFragmentFactory.addEnd***(fragments)' instead");
+            }
             tokens.add(token);
         }
 
         @Override
         public void visit(LineNumberToken token) {
-            int lineNumber = token.getLineNumber();
+            int lineNumber = token.lineNumber();
 
             if (lineNumber != Printer.UNKNOWN_LINE_NUMBER) {
                 if (currentLineNumber != Printer.UNKNOWN_LINE_NUMBER) {
@@ -557,58 +556,87 @@ public class TokenizeJavaFragmentVisitor implements JavaFragmentVisitor {
                     }
                 }
 
-                currentLineNumber = token.getLineNumber();
+                currentLineNumber = token.lineNumber();
                 tokens.add(token);
             }
         }
 
         @Override
         public void visit(StartBlockToken token) {
-            assert token != StartBlockToken.START_BLOCK : "Unexpected StartBlockToken.START_BLOCK at this step. Uses 'JavaFragmentFactory.addStart***(fragments)' instead";
+            if (token == StartBlockToken.START_BLOCK) {
+                throw new IllegalArgumentException("Unexpected StartBlockToken.START_BLOCK at this step. Uses 'JavaFragmentFactory.addStart***(fragments)' instead");
+            }
             tokens.add(token);
         }
 
-        @Override public void visit(BooleanConstantToken token) { tokens.add(token); }
-        @Override public void visit(CharacterConstantToken token) { tokens.add(token); }
-        @Override public void visit(DeclarationToken token) { tokens.add(token); }
-        @Override public void visit(EndMarkerToken token) { tokens.add(token); }
-        @Override public void visit(KeywordToken token) { tokens.add(token); }
-        @Override public void visit(NumericConstantToken token) { tokens.add(token); }
-        @Override public void visit(ReferenceToken token) { tokens.add(token); }
-        @Override public void visit(StartMarkerToken token) { tokens.add(token); }
-        @Override public void visit(StringConstantToken token) { tokens.add(token); }
-        @Override public void visit(TextToken token) { tokens.add(token); }
+        @Override
+        public void visit(BooleanConstantToken token) { tokens.add(token); }
+        @Override
+        public void visit(CharacterConstantToken token) { tokens.add(token); }
+        @Override
+        public void visit(DeclarationToken token) { tokens.add(token); }
+        @Override
+        public void visit(EndMarkerToken token) { tokens.add(token); }
+        @Override
+        public void visit(KeywordToken token) { tokens.add(token); }
+        @Override
+        public void visit(NumericConstantToken token) { tokens.add(token); }
+        @Override
+        public void visit(ReferenceToken token) { tokens.add(token); }
+        @Override
+        public void visit(StartMarkerToken token) { tokens.add(token); }
+        @Override
+        public void visit(StringConstantToken token) { tokens.add(token); }
+        @Override
+        public void visit(TextToken token) { tokens.add(token); }
     }
 
     protected class UnknownLineNumberTokenVisitor implements TokenVisitor {
         @Override
         public void visit(EndBlockToken token) {
-            assert token != EndBlockToken.END_BLOCK : "Unexpected EndBlockToken.END_BLOCK at this step. Uses 'JavaFragmentFactory.addEnd***(fragments)' instead";
+            if (token == EndBlockToken.END_BLOCK) {
+                throw new IllegalArgumentException("Unexpected EndBlockToken.END_BLOCK at this step. Uses 'JavaFragmentFactory.addEnd***(fragments)' instead");
+            }
             tokens.add(token);
         }
 
         @Override
         public void visit(LineNumberToken token) {
-            assert token.getLineNumber() == Printer.UNKNOWN_LINE_NUMBER : "LineNumberToken cannot have a known line number. Uses 'LineNumberTokensFragment' instead";
+            if (token.lineNumber() != Printer.UNKNOWN_LINE_NUMBER) {
+                throw new IllegalArgumentException("LineNumberToken cannot have a known line number. Uses 'LineNumberTokensFragment' instead");
+            }
         }
 
         @Override
         public void visit(StartBlockToken token) {
-            assert token != StartBlockToken.START_BLOCK : "Unexpected StartBlockToken.START_BLOCK at this step. Uses 'JavaFragmentFactory.addStart***(fragments)' instead";
+            if (token == StartBlockToken.START_BLOCK) {
+                throw new IllegalArgumentException("Unexpected StartBlockToken.START_BLOCK at this step. Uses 'JavaFragmentFactory.addStart***(fragments)' instead");
+            }
             tokens.add(token);
         }
 
-        @Override public void visit(BooleanConstantToken token) { tokens.add(token); }
-        @Override public void visit(CharacterConstantToken token) { tokens.add(token); }
-        @Override public void visit(DeclarationToken token) { tokens.add(token); }
-        @Override public void visit(EndMarkerToken token) { tokens.add(token); }
-        @Override public void visit(KeywordToken token) { tokens.add(token); }
-        @Override public void visit(NewLineToken token) { tokens.add(token); }
-        @Override public void visit(NumericConstantToken token) { tokens.add(token); }
-        @Override public void visit(ReferenceToken token) { tokens.add(token); }
-        @Override public void visit(StartMarkerToken token) { tokens.add(token); }
-        @Override public void visit(StringConstantToken token) { tokens.add(token); }
-        @Override public void visit(TextToken token) { tokens.add(token); }
+        @Override
+        public void visit(BooleanConstantToken token) { tokens.add(token); }
+        @Override
+        public void visit(CharacterConstantToken token) { tokens.add(token); }
+        @Override
+        public void visit(DeclarationToken token) { tokens.add(token); }
+        @Override
+        public void visit(EndMarkerToken token) { tokens.add(token); }
+        @Override
+        public void visit(KeywordToken token) { tokens.add(token); }
+        @Override
+        public void visit(NewLineToken token) { tokens.add(token); }
+        @Override
+        public void visit(NumericConstantToken token) { tokens.add(token); }
+        @Override
+        public void visit(ReferenceToken token) { tokens.add(token); }
+        @Override
+        public void visit(StartMarkerToken token) { tokens.add(token); }
+        @Override
+        public void visit(StringConstantToken token) { tokens.add(token); }
+        @Override
+        public void visit(TextToken token) { tokens.add(token); }
     }
 
     protected void visit(StartStatementsBlockFragment fragment, Collection<Token> adds) {

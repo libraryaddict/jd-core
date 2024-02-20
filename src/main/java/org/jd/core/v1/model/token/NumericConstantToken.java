@@ -7,18 +7,9 @@
 
 package org.jd.core.v1.model.token;
 
-public class NumericConstantToken implements Token {
+public record NumericConstantToken(String text) implements Token {
 
-    protected String text;
-
-    public NumericConstantToken(String text) {
-        this.text = text;
-    }
-
-    public String getText() {
-        return text;
-    }
-
+    @Override
     public String toString() {
         return "NumericConstantToken{'" + text + "'}";
     }
