@@ -148,7 +148,10 @@ public class CreateInstructionsVisitor extends AbstractJavaSyntaxVisitor {
             }
             if (!reduced) {
                 System.err.println("Could not reduce control flow graph in method " + method.getName() + method.getSignature() + " from class " + classFile.getInternalTypeName());
-                comd.setStatements(new Statements(ByteCodeWriter.getLineNumberTableAsStatements(method)));
+                List<Statement> statements = ByteCodeWriter.getLineNumberTableAsStatements(method);
+
+                if (statements.size() <= 1) comd.setStatements(statements);
+                else comd.setStatements(new Statements());
             }
 
             localVariableMaker.make(containsLineNumber, typeMaker);
